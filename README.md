@@ -6,7 +6,7 @@ runs client-side: no server, no accounts, no data leaves the machine.
 Built for CS 295 (Practical AI Ethics & Algorithmic Auditing) in the Department of
 Mathematics, Computer Science, and Statistics at Muhlenberg College.
 
-Live at **https://aiethics-lab.github.io**
+Live at **https://aidataethics.github.io**
 
 ---
 
