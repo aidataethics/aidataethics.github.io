@@ -59,14 +59,22 @@
 
     const centres = blocks.map(b => iso(b.u1 / 2, b.v1, b.h1 / 2));
 
-    // Names set flat in screen space, just left of each block's front corner,
-    // drawn after the blocks so none is hidden. (Text painted on the faces came
-    // out too small to read at page size.)
-    const nameEls = blocks.map(b => {
-        const [x, y] = iso(-6, b.v1, -1.5);   // just off the plate's left edge
-        const t = el('text', { x: x - 3, y: y + 2, 'text-anchor': 'end', class: 'lf-text' }, svg);
-        t.textContent = `${b.name} · ${b.mb < 1.5 ? '1' : b.mb.toFixed(b.mb < 10 ? 1 : 0)} MB`;
-        return t;
+    // Names set flat in screen space to the left of the plate, each with a
+    // hairline leader to its own block's front-bottom-left corner - the one
+    // corner of every block that stays visible. The label's right end sits
+    // NAME_GAP clear of the plate's slanted left edge, so the edge never runs
+    // through the text. (Text painted on the faces came out too small to read.)
+    const NAME_GAP = 22;   // label end, left of where the plate edge meets the row
+    const corner = (b, lift) => iso(0, b.v1, lift);
+    const names = blocks.map(b => {
+        const [cx, cy] = corner(b, 0);
+        const [ex] = iso(-6, b.v1);                 // plate edge at this row
+        const x = ex - NAME_GAP, y = cy + 3;         // baseline: text centred on the corner
+        const g = el('g', {}, svg);
+        const lead = el('line', { x1: x + 2, y1: cy, x2: cx, y2: cy, class: 'lf-line lf-faint' }, g);
+        const t = el('text', { x, y, 'text-anchor': 'end', class: 'lf-text' }, g);
+        t.textContent = `${b.name} · ${b.mb < 1 ? b.mb.toFixed(2) : b.mb.toFixed(b.mb < 10 ? 1 : 0)} MB`;
+        return { g, lead, t };
     });
 
     function draw(glow, active) {
@@ -74,7 +82,10 @@
             const lift = LIFT * glow[i];
             marks[i].solid.set(0, b.v0, lift, b.u1, b.v1, b.h1 + lift);
             marks[i].g.classList.toggle('is-lit', i === active);
-            nameEls[i].classList.toggle('is-lit', i === active);
+            const [cx, cy] = corner(b, lift);
+            names[i].lead.setAttribute('x2', cx.toFixed(2));
+            names[i].lead.setAttribute('y2', cy.toFixed(2));
+            names[i].g.classList.toggle('is-lit', i === active);
         });
     }
 
@@ -95,7 +106,7 @@
         rest: 'Length is vocabulary, height is dimensions: bulk is the download. Pick a block.',
         describe: i => {
             const b = blocks[i];
-            return `${b.name} · ${b.words.toLocaleString()} words × ${b.dims}d · ${b.mb < 1.5 ? '1.0' : b.mb.toFixed(1)} MB · ${b.note}`;
+            return `${b.name} · ${b.words.toLocaleString()} words × ${b.dims}d · ${b.mb < 1 ? b.mb.toFixed(2) : b.mb.toFixed(1)} MB · ${b.note}`;
         },
         // 2-D nearest to each block's near-face centre: the blocks overlap in x
         pick: (x, y) => {

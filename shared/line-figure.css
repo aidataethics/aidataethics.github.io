@@ -171,7 +171,7 @@
     stroke-width: 0.6;
 }
 
-:is(.project-figure, .chart-figure) :is(.lf-text.is-lit, .lf-label.is-lit) { fill: var(--ink); }
+:is(.project-figure, .chart-figure) :is(.lf-text.is-lit, .lf-label.is-lit, .is-lit .lf-text, .is-lit .lf-label) { fill: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
     :is(.project-figure, .chart-figure) * { transition: none !important; animation: none !important; }
