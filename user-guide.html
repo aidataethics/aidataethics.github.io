@@ -81,6 +81,7 @@
                     <li><a href="#filter-bubble" class="text-primary hover:underline">Lab 4 · Filter Bubble Simulator</a></li>
                     <li><a href="#privacy-lab" class="text-primary hover:underline">Labs 5–6 · Privacy &amp; Anonymization Lab</a></li>
                     <li><a href="#explainability-lab" class="text-primary hover:underline">Labs 7–8 · Model Explainability Lab</a></li>
+                    <li><a href="#behavioral-testing" class="text-primary hover:underline">Project 3 · Behavioral Testing Lab</a></li>
                     <li><a href="#adversarial-sandbox" class="text-primary hover:underline">Lab 9 · Adversarial Robustness Sandbox</a></li>
                     <li><a href="#value-alignment" class="text-primary hover:underline">Lab 10 · Value Alignment Tool</a></li>
                     <li><a href="#llm-sandbox" class="text-primary hover:underline">Lab 11 · LLM Ethical Sandbox</a></li>
@@ -209,6 +210,28 @@
                     <dd>No export.</dd>
                 </dl>
             </section>
+            <section id="behavioral-testing" aria-labelledby="behavioral-testing-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Project 3</p>
+                <h2 id="behavioral-testing-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/behavioral-testing.html" class="hover:underline">Behavioral Testing Lab</a></h2>
+                <p class="tool-question mt-1" data-tool="behavioral-testing"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>The same word-weight sentiment model the Explainability Lab explains, tested the way CheckList (Ribeiro et al., 2020) tests NLP models. A second option switches off the model’s negation rule, so you can measure what that one rule is worth.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Read the <strong>Failure rate by capability</strong> table: vocabulary, negation, robustness, fairness, temporal order, and whose opinion counts.</li>
+                        <li>Open a test to see its failing sentences and the model’s score for each.</li>
+                        <li>Where a test says <strong>cannot fail</strong>, the model ignores the words being changed: a pass there proves nothing.</li>
+                        <li>Under <strong>Write your own test</strong>, write a template such as <code class="font-mono text-xs">The {noun} was not that {pos_adj}.</code>, choose MFT, INV or DIR and what should happen, and press <strong>Add and run test</strong>. Add your own word lists if you need them.</li>
+                        <li>Tick <strong>Also show the other model’s failure rates</strong> to compare against the ablation.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>For each test, the share of generated cases the model gets wrong. A case is neutral when the model’s score is exactly 0.5 (it found no word it knows). DIR tests allow a change of up to 0.1 in the wrong direction.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd><strong>Copy link to this configuration</strong> carries your own tests and word lists, so a team can share one suite; <strong>Export report (HTML)</strong>.</dd>
+                </dl>
+            </section>
+
             <section id="adversarial-sandbox" aria-labelledby="adversarial-sandbox-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
                 <p class="eyebrow mb-1">Lab 9</p>
                 <h2 id="adversarial-sandbox-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/adversarial-sandbox.html" class="hover:underline">Adversarial Robustness Sandbox</a></h2>

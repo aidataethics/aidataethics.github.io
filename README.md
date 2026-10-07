@@ -1,6 +1,6 @@
 # AI & Data Ethics Toolkit
 
-Nine browser-based labs for an undergraduate AI and data ethics course. Everything
+Ten browser-based tools for an undergraduate AI and data ethics course. Everything
 runs client-side: no server, no accounts, no data leaves the machine.
 
 Built for CSI 205 (AI and Data Ethics) in the Department of
@@ -45,6 +45,7 @@ offers a one-click retry that asks for a direct answer instead.
 | --- | --- |
 | Word Embeddings Workbench | Vector arithmetic, WEAT bias measurement, and a debiasing demo that shows why projection does not work |
 | Model Explainability Lab | A sampled LIME surrogate next to exact Shapley values, on text and tabular models |
+| Behavioral Testing Lab | CheckList-style behavioural tests (MFT, INV, DIR) of the explainability lab's sentiment model, from templates students write |
 | Dataset Bias Auditor | Selection-rate and error-rate fairness metrics from a real confusion matrix |
 | Adversarial Robustness Sandbox | FGSM attacks against MobileNet v2, in the browser |
 | Filter Bubble Simulator | Feed diversity under engagement optimisation, with a chronological control |
@@ -81,7 +82,7 @@ them is part of the lesson:
 
 | Tier | Vocabulary | Dimensions | Size | Loads |
 | --- | --- | --- | --- | --- |
-| Small | 5,061 words | 50d | 1.0 MB | on page open |
+| Small | 5,061 words | 50d | 0.97 MB | on page open |
 | Large | 20,013 words | 100d | 7.6 MB | on demand |
 | Full | 50,000 words | 300d | 57 MB | on demand, with a confirmation |
 | Max | 80,000 words | 300d | 92 MB | on demand, with a confirmation |

@@ -126,6 +126,21 @@
             description: 'Measure how strongly ordinary features encode protected attributes, using the right statistic for each pair.'
         },
         {
+            id: 'behavioral-testing',
+            name: 'Behavioral Testing Lab',
+            short: 'Behavioral Testing',
+            icon: 'checklist',
+            color: 'teal',
+            category: 'explainability',
+            file: 'behavioral-testing.html',
+            lab: 'Project 3',
+            // A group project between the explainability labs and the
+            // adversarial lab: it tests the same sentiment model Labs 7-8 explain.
+            order: 8.5,
+            question: 'Which simple sentences does a model get wrong, and would accuracy ever tell you?',
+            description: 'Write CheckList tests from templates and word lists, and measure where a sentiment model fails.'
+        },
+        {
             id: 'llm-sandbox',
             name: 'LLM Ethical Sandbox',
             short: 'LLM Ethical Sandbox',
@@ -199,7 +214,7 @@
                     <h2 class="eyebrow">Labs, in course order</h2>
                 </div>
                 ${TOOLS.map(t => item(toolHref(t), t.icon, t.short, active === t.id,
-                    `<span class="ml-auto pl-2 text-xs tabular-nums text-slate-400">${esc(t.lab.replace(/^Labs? /, ''))}</span>`)).join('')}
+                    `<span class="ml-auto pl-2 text-xs tabular-nums text-slate-400">${esc(t.lab.replace(/^Labs? /, '').replace(/^Project /, 'P'))}</span>`)).join('')}
             </nav>
             <div class="border-t border-slate-200 dark:border-slate-800 p-4">
                 <p class="text-xs text-slate-400 mb-2">© 2026

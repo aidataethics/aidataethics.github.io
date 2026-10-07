@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Behavioral Testing Lab | AI &amp; Data Ethics Toolkit</title>
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
+    <script src="../shared/sentiment-model.js?v=3.2.0"></script>
+    <script src="../shared/checklist.js?v=3.2.0"></script>
+    <script src="../shared/checklist-suite.js?v=3.2.0"></script>
+    <script>
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
+        (function () {
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
+            function apply(dark) {
+                root.classList.toggle('dark', dark);
+                root.classList.toggle('light', !dark);
+            }
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
+            window.__setToolkitTheme = function (dark) {
+                apply(dark);
+                try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
+            };
+        })();
+    </script>
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
+    <link rel="icon" href="../shared/favicon.svg?v=3.2.0" type="image/svg+xml">
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 md:gap-0">
+            <div class="flex items-center w-full md:w-auto justify-between">
+                <div>
+                    <div class="flex items-center mb-1">
+                        <a href="../index.html" class="text-slate-400 hover:text-primary text-sm mr-2">Toolkit</a>
+                        <span class="material-icons-outlined text-slate-400 text-sm" aria-hidden="true">chevron_right</span>
+                        <span class="text-primary text-sm ml-2">Behavioral Testing</span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Behavioral Testing Lab</h1>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1">Test a sentiment model the way CheckList does:
+                        with templates, word lists and expectations you can state in a sentence.</p>
+                </div>
+                <button id="openSidebar" type="button" aria-label="Open navigation" class="md:hidden p-2 text-slate-500 hover:text-primary transition-colors">
+                    <span class="material-icons-outlined text-2xl" aria-hidden="true">menu</span>
+                </button>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer self-end md:self-auto">
+                <input type="checkbox" id="themeToggle" class="sr-only peer" />
+                <div
+                    class="w-11 h-6 bg-slate-300 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
+                </div>
+                <span class="ml-2 text-sm text-slate-500 dark:text-slate-400"><span
+                        class="material-icons-outlined text-sm align-middle" aria-hidden="true">dark_mode</span></span>
+            </label>
+        </header>
+
+        <!-- What the method is, and what is under test -->
+        <section aria-labelledby="aboutHeading"
+            class="mb-6 p-5 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6">
+            <div class="text-sm text-slate-600 dark:text-slate-300 space-y-3">
+                <h2 id="aboutHeading" class="text-lg text-slate-900 dark:text-white">Accuracy is one number; behaviour is a list</h2>
+                <p>A model can score well on a test set and still fail sentences a child would get right.
+                    <strong>CheckList</strong> (Ribeiro et al., 2020) tests a model the way software is tested: write a
+                    template, fill it from word lists, and state what the model should do. Three kinds of test:</p>
+                <dl class="grid sm:grid-cols-[5rem_1fr] gap-x-4 gap-y-2">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">MFT</dt>
+                    <dd><em>Minimum functionality.</em> Each case has a right answer: <span id="exMFT" class="font-mono text-xs"></span></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">INV</dt>
+                    <dd><em>Invariance.</em> A change that should not matter must not change the label: <span id="exINV" class="font-mono text-xs"></span></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">DIR</dt>
+                    <dd><em>Directional.</em> A change that should push one way must not push the other (by more than
+                        <span id="dirTol"></span>): <span id="exDIR" class="font-mono text-xs"></span></dd>
+                </dl>
+                <p class="text-xs text-slate-500 dark:text-slate-400">A probability of exactly 0.5 means the model found
+                    no word it knows; it is reported as <em>neutral</em>. Generation is seeded, so everyone sees the same
+                    cases.</p>
+            </div>
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label for="modelSelect" class="block font-semibold text-slate-900 dark:text-slate-100 mb-1">Model under test</label>
+                    <select id="modelSelect"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2">
+                        <option value="toolkit">Toolkit sentiment model</option>
+                        <option value="no-negation">Same model, negation handling off</option>
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">The word-weight model from the
+                        <a href="explainability-lab.html" class="text-primary hover:underline">Explainability Lab</a>:
+                        <span id="modelFacts">loading…</span> The second option is an <em>ablation</em> of the same model,
+                        not a different one: its negators are read as ordinary words.</p>
+                </div>
+                <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" id="compareAblation" class="mt-1 accent-primary">
+                    <span>Also show the other model's failure rates, for comparison</span>
+                </label>
+                <div id="modelStatus" role="status" class="text-xs text-slate-500 dark:text-slate-400"></div>
+            </div>
+        </section>
+
+        <!-- Summary matrix -->
+        <section aria-labelledby="matrixHeading"
+            class="mb-6 p-5 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+                <h2 id="matrixHeading" class="text-lg text-slate-900 dark:text-white">Failure rate by capability</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Failed cases ÷ cases, pooled over the tests in each cell</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="matrix" class="w-full text-sm border-collapse"></table>
+            </div>
+        </section>
+
+        <!-- Every test -->
+        <section aria-labelledby="testsHeading"
+            class="mb-6 p-5 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+                <h2 id="testsHeading" class="text-lg text-slate-900 dark:text-white">Tests</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Open a test to read its failing cases</p>
+            </div>
+            <div id="testList" class="divide-y divide-slate-200 dark:divide-slate-700/60"></div>
+        </section>
+
+        <!-- Write a test -->
+        <section aria-labelledby="builderHeading"
+            class="mb-6 p-5 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60">
+            <h2 id="builderHeading" class="text-lg text-slate-900 dark:text-white mb-1">Write your own test</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">Put a word list in braces: <code class="font-mono text-xs">{pos_adj}</code>.
+                Use <code class="font-mono text-xs">{pos_adj2}</code> for a second, independent slot from the same list.
+                Your tests travel in the page link, so a team can share one suite.</p>
+            <form id="builder" class="grid md:grid-cols-2 gap-4 text-sm" novalidate>
+                <div class="md:col-span-2">
+                    <label for="ctTemplate" class="block font-semibold mb-1">Template</label>
+                    <input id="ctTemplate" type="text" autocomplete="off" spellcheck="false"
+                        value="The {noun} was not that {pos_adj}."
+                        class="w-full font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2">
+                </div>
+                <div>
+                    <label for="ctName" class="block font-semibold mb-1">What it checks</label>
+                    <input id="ctName" type="text" value="Hedged negation is negative"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2">
+                </div>
+                <div>
+                    <label for="ctCapability" class="block font-semibold mb-1">Capability</label>
+                    <select id="ctCapability"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2"></select>
+                </div>
+                <div>
+                    <label for="ctType" class="block font-semibold mb-1">Test type</label>
+                    <select id="ctType"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2">
+                        <option value="MFT">MFT: each case has a right answer</option>
+                        <option value="INV">INV: a change must not change the label</option>
+                        <option value="DIR">DIR: an added phrase must push one way</option>
+                    </select>
+                </div>
+                <div data-for="MFT">
+                    <label for="ctExpect" class="block font-semibold mb-1">Every case should be</label>
+                    <select id="ctExpect"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2">
+                        <option value="negative">negative</option>
+                        <option value="positive">positive</option>
+                        <option value="neutral">neutral (no sentiment)</option>
+                        <option value="not-negative">not negative</option>
+                        <option value="not-positive">not positive</option>
+                    </select>
+                </div>
+                <div data-for="INV" hidden>
+                    <label for="ctPerturb" class="block font-semibold mb-1">Change to apply</label>
+                    <select id="ctPerturb"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2"></select>
+                </div>
+                <div data-for="DIR" hidden>
+                    <label for="ctPhrases" class="block font-semibold mb-1">Phrase list to append</label>
+                    <select id="ctPhrases"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2"></select>
+                </div>
+                <div data-for="DIR" hidden>
+                    <label for="ctDirection" class="block font-semibold mb-1">The score should</label>
+                    <select id="ctDirection"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2">
+                        <option value="up">not go down</option>
+                        <option value="down">not go up</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="ctN" class="block font-semibold mb-1">Cases to generate (at most)</label>
+                    <input id="ctN" type="number" min="5" max="200" value="40"
+                        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="ctLexicons" class="block font-semibold mb-1">Your word lists <span class="font-normal text-slate-500">(optional; one per line, <code class="font-mono text-xs">name: word, word, word</code>)</span></label>
+                    <textarea id="ctLexicons" rows="3" spellcheck="false"
+                        placeholder="slang_pos: dope, fire, lit, sick"
+                        class="w-full font-mono text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-surface-dark-lighter px-3 py-2"></textarea>
+                </div>
+                <div class="md:col-span-2 flex flex-wrap items-center gap-3">
+                    <button type="submit"
+                        class="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white font-medium transition-colors">Add and run test</button>
+                    <p id="builderMsg" role="status" class="text-sm"></p>
+                </div>
+            </form>
+            <details class="mt-5 text-sm">
+                <summary class="cursor-pointer font-semibold text-slate-900 dark:text-slate-100">Built-in word lists</summary>
+                <dl id="lexiconList" class="mt-3 grid sm:grid-cols-[8rem_1fr] gap-x-4 gap-y-1.5 text-slate-600 dark:text-slate-300"></dl>
+            </details>
+        </section>
+
+        <div class="flex flex-wrap gap-2 mb-6 no-print">
+            <button type="button" id="copyLinkBtn"
+                class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">
+                Copy link to this configuration
+            </button>
+            <button type="button" id="exportBtn"
+                class="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-sm font-medium transition-colors flex items-center">
+                <span class="material-icons-outlined mr-2 text-base" aria-hidden="true">download</span>
+                Export report (HTML)
+            </button>
+        </div>
+    </main>
+
+    <script src="../shared/session.js?v=3.2.0"></script>
+    <script src="../shared/toolkit.js?v=3.2.0"></script>
+    <script>
+        Toolkit.mountShell({ active: 'behavioral-testing' });
+        ToolkitSession.maybeOfferConsent();
+    </script>
+    <script>
+        (function () {
+            const { LEXICONS, TESTS, CAPABILITIES } = CheckListSuite;
+            const esc = Toolkit.esc;
+            const TYPES = ['MFT', 'INV', 'DIR'];
+            const MODELS = {
+                toolkit: { name: 'Toolkit sentiment model', opts: {} },
+                'no-negation': { name: 'Same model, negation handling off', opts: { negation: false } },
+            };
+
+            let model = null;          // the parsed sentiment-model-v2.json
+            let vocab = null;          // every word the model can score
+            let custom = [];           // tests written on this page
+            let customLex = {};        // word lists written on this page
+            let results = [];          // [{ test, main, other }]
+            const open = new Set();    // ids of tests whose cases are showing
+
+            const predictor = key => text => SentimentModel.score(model, text, MODELS[key].opts).prob;
+            const pct = x => (100 * x).toFixed(0) + '%';
+            const fmt = p => p.toFixed(3);
+            const otherKey = key => key === 'toolkit' ? 'no-negation' : 'toolkit';
+
+            // ------------------------------------------------------------ load
+            async function load() {
+                const res = await fetch('../data/sentiment-model-v2.json');
+                model = await res.json();
+                vocab = new Set([
+                    ...Object.keys(model.weights),
+                    ...Object.keys(model.bigrams || {}).flatMap(b => b.split(' ')),
+                    ...(model.negators || []), ...Object.keys(model.intensifiers || {}), ...(model.contrastive || []),
+                ]);
+                document.getElementById('modelFacts').textContent =
+                    `${Object.keys(model.weights).length} scored words and ${Object.keys(model.bigrams || {}).length} word pairs, ` +
+                    `with rules for negation, intensifiers and “but”.`;
+            }
+
+            // ------------------------------------------------------------- run
+            function allTests() { return TESTS.concat(custom); }
+            function lexicons() { return Object.assign({}, LEXICONS, customLex); }
+
+            function runAll() {
+                const key = document.getElementById('modelSelect').value;
+                const compare = document.getElementById('compareAblation').checked;
+                const lex = lexicons();
+                results = allTests().map(test => {
+                    const main = CheckList.run(test, predictor(key), lex, vocab);
+                    const other = compare ? CheckList.run(test, predictor(otherKey(key)), lex, vocab) : null;
+                    return { test, main, other };
+                });
+                renderMatrix(key, compare);
+                renderTests(key, compare);
+                const fails = results.reduce((s, r) => s + r.main.fails, 0);
+                const cases = results.reduce((s, r) => s + r.main.n, 0);
+                document.getElementById('modelStatus').textContent =
+                    `${results.length} tests, ${cases} cases: ${fails} failed (${pct(fails / cases)}).`;
+                ToolkitSession?.record('checklist.run', { model: key, tests: results.length, custom: custom.length, failed: fails, cases });
+            }
+
+            // ---------------------------------------------------------- matrix
+            function pooled(rs, which) {
+                const n = rs.reduce((s, r) => s + r[which].n, 0);
+                const f = rs.reduce((s, r) => s + r[which].fails, 0);
+                return { n, f, rate: n ? f / n : 0, tests: rs.length, structural: rs.length > 0 && rs.every(r => r[which].structural) };
+            }
+            function capabilitiesInUse() {
+                const caps = CAPABILITIES.slice();
+                custom.forEach(t => { if (!caps.includes(t.capability)) caps.push(t.capability); });
+                return caps;
+            }
+            function renderMatrix(key, compare) {
+                const head = `<thead><tr><th scope="col" class="text-left font-semibold py-2 pr-4">Capability</th>` +
+                    TYPES.map(t => `<th scope="col" class="text-left font-semibold py-2 pr-4">${t}</th>`).join('') + `</tr></thead>`;
+                const rows = capabilitiesInUse().map(cap => {
+                    const cells = TYPES.map(type => {
+                        const rs = results.filter(r => r.test.capability === cap && r.test.type === type);
+                        if (!rs.length) return `<td class="py-2 pr-4 text-slate-400">&mdash;</td>`;
+                        const m = pooled(rs, 'main');
+                        const o = compare ? pooled(rs, 'other') : null;
+                        return `<td class="py-2 pr-4 align-top">
+                            <div class="flex items-baseline gap-2"><span class="font-semibold tabular-nums ${m.f ? 'text-red-600 dark:text-red-400' : ''}">${pct(m.rate)}</span>
+                            <span class="text-xs text-slate-500">${m.f}/${m.n} · ${m.tests} test${m.tests > 1 ? 's' : ''}</span></div>
+                            ${bar(m.rate)}
+                            ${m.structural ? '<div class="text-xs text-slate-500 mt-1">cannot fail: the model ignores these words</div>' : ''}
+                            ${o ? `<div class="text-xs text-slate-500 mt-1">${esc(MODELS[otherKey(key)].name)}: <span class="tabular-nums">${pct(o.rate)}</span></div>` : ''}
+                        </td>`;
+                    }).join('');
+                    return `<tr class="border-t border-slate-200 dark:border-slate-700/60"><th scope="row" class="text-left font-medium py-2 pr-4 align-top">${esc(cap)}</th>${cells}</tr>`;
+                }).join('');
+                document.getElementById('matrix').innerHTML = head + `<tbody>${rows}</tbody>`;
+            }
+            function bar(rate) {
+                return `<div class="mt-1 h-1.5 w-full max-w-[10rem] rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden="true">
+                    <div class="h-full bg-red-500" style="width:${(100 * rate).toFixed(1)}%"></div></div>`;
+            }
+
+            // ----------------------------------------------------------- tests
+            function expectation(t) {
+                if (t.type === 'MFT') return `every case ${t.expect.replace('-', ' ')}`;
+                if (t.type === 'INV') return CheckList.PERTURB[t.perturb].label.toLowerCase() + '; label must not change';
+                return `append “${t.phrases}”; score must not go ${t.direction === 'up' ? 'down' : 'up'} by more than ${CheckList.DIR_TOLERANCE}`;
+            }
+            function renderTests(key, compare) {
+                const html = capabilitiesInUse().map(cap => {
+                    const rs = results.filter(r => r.test.capability === cap);
+                    if (!rs.length) return '';
+                    return `<div class="py-3"><h3 class="eyebrow mb-2">${esc(cap)}</h3>` + rs.map(r => testRow(r, key, compare)).join('') + `</div>`;
+                }).join('');
+                document.getElementById('testList').innerHTML = html;
+            }
+            function testRow(r, key, compare) {
+                const t = r.test, m = r.main, id = t.id;
+                const isOpen = open.has(id);
+                const mine = custom.includes(t);
+                return `<div class="py-2">
+                    <div class="flex flex-wrap items-start gap-x-4 gap-y-1">
+                        <button type="button" class="flex-1 min-w-[14rem] text-left group" aria-expanded="${isOpen}" aria-controls="cases-${esc(id)}" data-toggle="${esc(id)}">
+                            <span class="inline-block w-10 text-xs font-semibold text-slate-500">${t.type}</span>
+                            <span class="font-medium text-slate-900 dark:text-slate-100 group-hover:underline">${esc(t.name)}</span>
+                            ${mine ? '<span class="ml-1 text-xs text-primary">yours</span>' : ''}
+                            <span class="block pl-10 font-mono text-xs text-slate-500 dark:text-slate-400 break-words">${esc(t.template)}</span>
+                            <span class="block pl-10 text-xs text-slate-500 dark:text-slate-400">${esc(expectation(t))}</span>
+                        </button>
+                        <div class="w-44 text-sm">
+                            <div class="flex items-baseline gap-2"><span class="font-semibold tabular-nums ${m.fails ? 'text-red-600 dark:text-red-400' : ''}">${pct(m.failRate)}</span>
+                                <span class="text-xs text-slate-500 tabular-nums">${m.fails}/${m.n} failed</span></div>
+                            ${bar(m.failRate)}
+                            ${m.structural ? '<div class="text-xs text-slate-500 mt-1">cannot fail: the model ignores the changed words</div>' : ''}
+                            ${compare && r.other ? `<div class="text-xs text-slate-500 mt-1">${esc(MODELS[otherKey(key)].name)}: <span class="tabular-nums">${pct(r.other.failRate)}</span></div>` : ''}
+                            ${mine ? `<button type="button" class="mt-1 text-xs text-slate-500 hover:text-red-600 underline" data-remove="${esc(id)}">Remove test</button>` : ''}
+                        </div>
+                    </div>
+                    <div id="cases-${esc(id)}" ${isOpen ? '' : 'hidden'} class="mt-2 ml-10">${isOpen ? casesHtml(m) : ''}</div>
+                </div>`;
+            }
+            function casesHtml(m) {
+                const failing = m.cases.filter(c => !c.pass);
+                const passing = m.cases.filter(c => c.pass);
+                const show = (c, ok) => {
+                    const mark = ok ? '<span class="text-green-700 dark:text-green-400">pass</span>' : '<span class="text-red-600 dark:text-red-400">fail</span>';
+                    const base = `<span class="font-mono">${esc(c.text)}</span> <span class="tabular-nums text-slate-500">${fmt(c.prob)} ${c.label}</span>`;
+                    if (!c.variants) return `<li>${mark} ${base}</li>`;
+                    const v = c.variants.find(x => !x.pass) || c.variants[0];
+                    return `<li>${mark} ${base}<br><span class="text-slate-400" aria-hidden="true">→</span><span class="sr-only">changed to</span>
+                        <span class="font-mono">${esc(v.text)}</span> <span class="tabular-nums text-slate-500">${fmt(v.prob)} ${v.label}</span></li>`;
+                };
+                return `<p class="text-xs text-slate-500 mb-1">Score = the model's probability of positive.</p>
+                    <ul class="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+                    ${failing.slice(0, 10).map(c => show(c, false)).join('')}
+                    ${failing.length > 10 ? `<li class="text-slate-500">…and ${failing.length - 10} more failing cases</li>` : ''}
+                    ${passing.slice(0, 3).map(c => show(c, true)).join('')}
+                    </ul>`;
+            }
+
+            document.getElementById('testList').addEventListener('click', e => {
+                const tog = e.target.closest('[data-toggle]');
+                if (tog) {
+                    const id = tog.dataset.toggle;
+                    open.has(id) ? open.delete(id) : open.add(id);
+                    const r = results.find(x => x.test.id === id);
+                    const box = document.getElementById('cases-' + id);
+                    box.hidden = !open.has(id);
+                    box.innerHTML = open.has(id) ? casesHtml(r.main) : '';
+                    tog.setAttribute('aria-expanded', open.has(id));
+                    return;
+                }
+                const rm = e.target.closest('[data-remove]');
+                if (rm) {
+                    custom = custom.filter(t => t.id !== rm.dataset.remove);
+                    saveState();
+                    runAll();
+                }
+            });
+
+            // --------------------------------------------------------- builder
+            function parseLexicons(text) {
+                const out = {};
+                text.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+                    const m = /^([a-z_]+)\s*:\s*(.+)$/i.exec(line);
+                    if (!m) throw new Error(`Cannot read “${line}”. Write it as name: word, word`);
+                    out[m[1].toLowerCase()] = m[2].split(',').map(w => w.trim()).filter(Boolean);
+                });
+                return out;
+            }
+            function showFor(type) {
+                document.querySelectorAll('#builder [data-for]').forEach(el => { el.hidden = el.dataset.for !== type; });
+            }
+            function fillBuilderOptions() {
+                const cap = document.getElementById('ctCapability');
+                cap.innerHTML = CAPABILITIES.map(c => `<option>${esc(c)}</option>`).join('');
+                document.getElementById('ctPerturb').innerHTML = Object.entries(CheckList.PERTURB)
+                    .map(([k, p]) => `<option value="${k}">${esc(p.label)}</option>`).join('');
+                refreshPhraseLists();
+                document.getElementById('lexiconList').innerHTML = Object.entries(LEXICONS)
+                    .map(([k, ws]) => `<dt class="font-mono text-xs pt-0.5">${esc(k)}</dt><dd>${esc(ws.join(', '))}</dd>`).join('');
+            }
+            function refreshPhraseLists() {
+                const sel = document.getElementById('ctPhrases');
+                const keep = sel.value;
+                sel.innerHTML = Object.keys(lexicons()).filter(k => /phrase/.test(k) || customLex[k])
+                    .map(k => `<option>${esc(k)}</option>`).join('');
+                if (keep) sel.value = keep;
+            }
+            document.getElementById('ctType').addEventListener('change', e => showFor(e.target.value));
+            document.getElementById('ctLexicons').addEventListener('change', () => {
+                try { customLex = parseLexicons(document.getElementById('ctLexicons').value); refreshPhraseLists(); } catch (e) { /* reported on submit */ }
+            });
+
+            document.getElementById('builder').addEventListener('submit', e => {
+                e.preventDefault();
+                const msg = document.getElementById('builderMsg');
+                msg.className = 'text-sm';
+                try {
+                    customLex = parseLexicons(document.getElementById('ctLexicons').value);
+                    const type = document.getElementById('ctType').value;
+                    const template = document.getElementById('ctTemplate').value.trim();
+                    if (!CheckList.slots(template).length) throw new Error('The template needs at least one {word_list}.');
+                    const t = {
+                        id: 'u' + CheckList.hashSeed(template + type + Date.now()).toString(36),
+                        capability: document.getElementById('ctCapability').value,
+                        type, template,
+                        name: document.getElementById('ctName').value.trim() || template,
+                        n: Math.max(5, Math.min(200, parseInt(document.getElementById('ctN').value, 10) || 40)),
+                    };
+                    if (type === 'MFT') t.expect = document.getElementById('ctExpect').value;
+                    if (type === 'INV') t.perturb = document.getElementById('ctPerturb').value;
+                    if (type === 'DIR') {
+                        t.phrases = document.getElementById('ctPhrases').value;
+                        t.direction = document.getElementById('ctDirection').value;
+                    }
+                    const r = CheckList.run(t, predictor(document.getElementById('modelSelect').value), lexicons(), vocab);
+                    if (!r.n) throw new Error('No cases were generated: nothing in this template can be changed that way.');
+                    custom.push(t);
+                    open.add(t.id);
+                    saveState();
+                    runAll();
+                    msg.textContent = `Added: ${r.fails} of ${r.n} cases failed (${pct(r.failRate)}).`;
+                    document.querySelector(`[data-toggle="${t.id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                } catch (err) {
+                    msg.className = 'text-sm text-red-600 dark:text-red-400';
+                    msg.textContent = err.message;
+                }
+            });
+
+            // ------------------------------------------------------ link state
+            // Custom tests and word lists ride in the URL hash, so a link
+            // reopens the whole suite - how a team shares one.
+            function saveState() {
+                const st = Toolkit.state.read();
+                st.tests = custom.length ? JSON.stringify(custom) : '';
+                st.lex = Object.keys(customLex).length ? JSON.stringify(customLex) : '';
+                Toolkit.state.write(st);
+            }
+            function restoreState() {
+                const st = Toolkit.state.read();
+                try { custom = st.tests ? JSON.parse(st.tests) : []; } catch (e) { custom = []; }
+                try { customLex = st.lex ? JSON.parse(st.lex) : {}; } catch (e) { customLex = {}; }
+                if (Object.keys(customLex).length) {
+                    document.getElementById('ctLexicons').value =
+                        Object.entries(customLex).map(([k, ws]) => `${k}: ${ws.join(', ')}`).join('\n');
+                }
+            }
+
+            // ---------------------------------------------------------- export
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                const key = document.getElementById('modelSelect').value;
+                const compare = document.getElementById('compareAblation').checked;
+                const caps = capabilitiesInUse();
+                const matrix = `<table><tr><th>Capability</th>${TYPES.map(t => `<th>${t}</th>`).join('')}</tr>` + caps.map(cap =>
+                    `<tr><th>${esc(cap)}</th>${TYPES.map(type => {
+                        const rs = results.filter(r => r.test.capability === cap && r.test.type === type);
+                        if (!rs.length) return '<td>&mdash;</td>';
+                        const m = pooled(rs, 'main');
+                        return `<td>${pct(m.rate)} (${m.f}/${m.n})${m.structural ? ' &mdash; cannot fail' : ''}</td>`;
+                    }).join('')}</tr>`).join('') + `</table>`;
+                const tests = `<table><tr><th>Capability</th><th>Type</th><th>Test</th><th>Template</th><th>Failed</th>${compare ? `<th>${esc(MODELS[otherKey(key)].name)}</th>` : ''}</tr>` +
+                    results.map(r => `<tr><td>${esc(r.test.capability)}</td><td>${r.test.type}</td><td>${esc(r.test.name)}${custom.includes(r.test) ? ' (written in class)' : ''}</td>
+                        <td><code>${esc(r.test.template)}</code></td><td>${r.main.fails}/${r.main.n} (${pct(r.main.failRate)})${r.main.structural ? ' &mdash; cannot fail' : ''}</td>
+                        ${compare ? `<td>${r.other.fails}/${r.other.n} (${pct(r.other.failRate)})</td>` : ''}</tr>`).join('') + `</table>`;
+                const examples = results.filter(r => r.main.fails).map(r => {
+                    const c = r.main.cases.filter(x => !x.pass).slice(0, 3).map(x => {
+                        const v = x.variants ? x.variants.find(y => !y.pass) : null;
+                        return `<li><code>${esc(x.text)}</code> ${fmt(x.prob)} ${x.label}${v ? ` &rarr; <code>${esc(v.text)}</code> ${fmt(v.prob)} ${v.label}` : ''}</li>`;
+                    }).join('');
+                    return `<p><strong>${esc(r.test.name)}</strong></p><ul>${c}</ul>`;
+                }).join('');
+                Toolkit.report.download({
+                    tool: 'behavioral-testing',
+                    title: 'Behavioral Testing Lab — Report',
+                    config: {
+                        'Model under test': MODELS[key].name,
+                        'Tests': `${results.length} (${custom.length} written in class)`,
+                        'Neutral': 'probability exactly 0.5 (no known word)',
+                        'DIR tolerance': String(CheckList.DIR_TOLERANCE),
+                    },
+                    sections: [
+                        { heading: 'Failure rate by capability', html: matrix },
+                        { heading: 'Every test', html: tests },
+                        { heading: 'Failing examples (first three per test)', html: examples },
+                        { heading: 'Method', html: '<p>CheckList-style behavioural testing (Ribeiro, Wu, Guestrin &amp; Singh, ACL 2020). Cases are generated from templates and word lists with a fixed seed, so this run can be reproduced from the link below.</p>' },
+                    ],
+                });
+            });
+
+            // ----------------------------------------------------- worked examples
+            function fillExamples() {
+                const p = predictor('toolkit');
+                const show = t => `“${t}” → ${fmt(p(t))}`;
+                document.getElementById('exMFT').textContent = show('This movie is not good.') + ' (should be negative)';
+                document.getElementById('exINV').textContent = show('The film was great.') + ' vs ' + show('The film was graet.');
+                document.getElementById('exDIR').textContent = show('The meal was dull.') + ' vs ' + show('The meal was dull. I loved it.');
+                document.getElementById('dirTol').textContent = CheckList.DIR_TOLERANCE;
+            }
+
+            // ------------------------------------------------------------ start
+            (async () => {
+                try {
+                    await load();
+                } catch (e) {
+                    document.getElementById('modelStatus').textContent =
+                        'Could not load the model. Open this page from a web server, not as a file.';
+                    return;
+                }
+                fillBuilderOptions();
+                restoreState();
+                refreshPhraseLists();
+                Toolkit.state.bind(['modelSelect', 'compareAblation'], { onRestore: runAll });
+                Toolkit.state.wireCopyButton('copyLinkBtn');
+                document.getElementById('modelSelect').addEventListener('change', runAll);
+                document.getElementById('compareAblation').addEventListener('change', runAll);
+                fillExamples();
+                runAll();
+            })();
+        })();
+    </script>
+</body>
+
+</html>

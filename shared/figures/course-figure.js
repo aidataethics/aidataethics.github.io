@@ -1,4 +1,4 @@
-// Home page (index.html): the course as a climb. Each of the nine tools is a
+// Home page (index.html): the course as a climb. Each of the ten tools is a
 // tray on a rising staircase, in the order the course reaches it; each lab is
 // a card standing on its tool's tray (Privacy and Explainability carry two
 // labs each). The last tray is the Lab 12 capstone, which reuses four earlier
@@ -7,7 +7,9 @@
 // Data: lab numbers and titles are the "## Lab N:" headings of the course's
 // lab handouts (ai_ethics_course/labs/lab1..lab12), and Lab 12's four phases
 // are its "Phase 1-4" headings (Bias Auditor, Proxy Detector, Explainability
-// Lab, Adversarial Sandbox). Tool names, links and questions come from
+// Lab, Adversarial Sandbox). 'P3' is Group Project 3 (ai_ethics_course/projects/
+// project3_behavioral_testing.md), the one project with a tool of its own.
+// Tool names, links and questions come from
 // Toolkit.TOOLS in shared/toolkit.js, so the figure and the list under it
 // cannot disagree. If the lab sequence changes, edit LABS below and the
 // handouts.
@@ -26,6 +28,7 @@
         { lab: 6, tool: 'privacy-lab', topic: 'differential privacy' },
         { lab: 7, tool: 'explainability-lab', topic: 'tabular explanations' },
         { lab: 8, tool: 'explainability-lab', topic: 'text explanations' },
+        { lab: 'P3', tool: 'behavioral-testing', topic: 'CheckList tests, in groups' },
         { lab: 9, tool: 'adversarial-sandbox', topic: 'gradient attacks' },
         { lab: 10, tool: 'value-alignment', topic: 'ethical frameworks' },
         { lab: 11, tool: 'llm-sandbox', topic: 'red teaming' },
@@ -65,8 +68,9 @@
     const maxY = (DEPTH - 0) * 0.5 + T + 10;
     const maxX = (L + DEPTH) * 0.866;
     const svg = makeSvg(root, `-10 ${minY.toFixed(1)} ${(maxX + 20).toFixed(1)} ${(maxY - minY).toFixed(1)}`,
-        'A staircase of nine trays climbing from left to right, one per tool, in the order the course uses them. ' +
-        'Twelve lab cards stand on the trays: Privacy and Explainability carry two labs each. The top tray is the ' +
+        'A staircase of ten trays climbing from left to right, one per tool, in the order the course uses them. ' +
+        'Twelve lab cards and one group-project card stand on the trays: Privacy and Explainability carry two labs ' +
+        'each, and the Behavioral Testing tray carries Project 3. The top tray is the ' +
         'Lab 12 capstone audit, which reuses the Bias Auditor, Proxy Detector, Explainability Lab and Adversarial Sandbox.');
 
     // Draw farthest first: larger u is farther back.
@@ -135,13 +139,14 @@
     interact({
         root, svg, count: LABS.length,
         onChange: i => { current = i; root.style.cursor = i >= 0 ? 'pointer' : ''; },
-        rest: 'Twelve labs on nine tools, climbing in course order. Pick a lab to see its topic.',
+        rest: 'Twelve labs and a group project on ten tools, in course order. Pick one to see its topic.',
         describe: i => {
             const c = LABS[i];
             if (c.tool === 'capstone') {
                 return 'Lab 12 · capstone audit · reuses the Bias Auditor, Proxy Detector, Explainability Lab and Adversarial Sandbox';
             }
-            return `Lab ${c.lab} · ${TOOLS[c.tool].short} · ${c.topic}`;
+            const what = typeof c.lab === 'number' ? `Lab ${c.lab}` : `Project ${c.lab.slice(1)}`;
+            return `${what} · ${TOOLS[c.tool].short} · ${c.topic}`;
         },
         pick: x => nearest(x, xs, 28),
         draw: (glow, active) => {
