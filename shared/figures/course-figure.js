@@ -14,7 +14,7 @@
 (function () {
     const root = document.getElementById('course-figure');
     if (!root || !window.LineFigure || !window.Toolkit) return;
-    const { iso, pts, el, svg: makeSvg, box, edgeLabel, nearest, interact } = window.LineFigure;
+    const { iso, el, svg: makeSvg, box, nearest, interact } = window.LineFigure;
 
     // Lab -> tool, in course order. `lab` is the number on the handout.
     const LABS = [
@@ -76,9 +76,6 @@
         const g = el('g', {}, svg);
         trayEls[i] = g;
         box(g, 'lf-solid').set(trayU(i), 0, trayH(i) - T, trayU(i) + TRAY_W, DEPTH, trayH(i));
-        // the tray's lab numbers, printed on its near edge
-        const labs = LABS.filter(l => l.tool === TRAYS[i]).map(l => l.lab).join('–');
-        edgeLabel(g, labs, trayU(i) + 2.5, DEPTH, trayH(i) - T - 1, 'lf-text');
 
         cards.filter(c => c.ti === i).forEach(c => {
             const cg = el('g', {}, svg);
@@ -103,6 +100,19 @@
         // a gentle arc above the staircase
         const mx = (capTop[0] + p[0]) / 2, my = Math.min(capTop[1], p[1]) - 44;
         return el('path', { class: 'lf-line', d: `M${p[0]},${p[1]} Q${mx},${my} ${capTop[0]},${capTop[1]}` }, threads);
+    });
+
+    // Lab numbers, set flat in screen space and centred under each tray's
+    // front edge, drawn last so no tray line runs through them. (Printed on
+    // the 4-unit tray edge, they were cut by its lines.) The nearer tray, one
+    // step down-left, ends at least 14 units left of each label, so they stay
+    // clear.
+    const NUM_DROP = 15;  // baseline below the front-bottom edge midpoint; the edge slopes, so a label needs ~6 more than its height
+    const numEls = TRAYS.map((id, i) => {
+        const [x, y] = iso(trayU(i) + TRAY_W / 2, DEPTH, trayH(i) - T);
+        const t = el('text', { x, y: y + NUM_DROP, 'text-anchor': 'middle', class: 'lf-text' }, svg);
+        t.textContent = LABS.filter(l => l.tool === id).map(l => l.lab).join('–');
+        return t;
     });
 
     const xs = cards.map(c => iso(c.u + CARD_T / 2, DEPTH / 2, 0)[0]);
@@ -149,8 +159,12 @@
                 ce.g.classList.toggle('is-lit', i === active);
             });
             const activeTray = active >= 0 ? cards[active].ti : -1;
-            trayEls.forEach((g, ti) => g.classList.toggle('is-lit', ti === activeTray ||
-                (active >= 0 && LABS[active].tool === 'capstone' && CAPSTONE_USES.includes(TRAYS[ti]))));
+            trayEls.forEach((g, ti) => {
+                const lit = ti === activeTray ||
+                    (active >= 0 && LABS[active].tool === 'capstone' && CAPSTONE_USES.includes(TRAYS[ti]));
+                g.classList.toggle('is-lit', lit);
+                numEls[ti].classList.toggle('is-lit', lit);
+            });
             const capIdx = LABS.findIndex(l => l.tool === 'capstone');
             threads.setAttribute('opacity', (glow[capIdx] || 0).toFixed(2));
             threads.classList.toggle('is-lit', active === capIdx);

@@ -135,7 +135,7 @@
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
                     <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">User Profile</h2>
-                    <div class="space-y-2" id="userProfile"></div>
+                    <div class="grid grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2" id="userProfile"></div>
                 </div>
 
                 <div class="flex gap-2">
@@ -473,13 +473,17 @@
             const total = Object.values(userInterests).reduce((s, v) => s + v, 0);
             const container = document.getElementById('userProfile');
             container.innerHTML = Object.entries(TOPICS).map(([key, topic]) => {
-                const pct = ((userInterests[key] || 0) / total * 100).toFixed(0);
-                return `<div class="flex items-center gap-2">
-                <span class="text-xs w-16 truncate" style="color: ${topic.color}">${topic.label.split(' ')[0]}</span>
-                <div class="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                // One decimal: eight equal interests are 12.5% each, and
+                // rounding to whole numbers showed 13% x 8 = 104%.
+                const pct = ((userInterests[key] || 0) / total * 100).toFixed(1);
+                // Rows share the container's three-column grid (display: contents),
+                // so every bar starts at the same x and no name is cut off.
+                return `<div class="contents">
+                <span class="text-xs" style="color: ${topic.color}">${topic.label.split(' ')[0]}</span>
+                <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                     <div class="h-full rounded-full transition-all" style="width: ${pct}%; background: ${topic.color}"></div>
                 </div>
-                <span class="text-xs text-slate-500 w-8 text-right">${pct}%</span>
+                <span class="text-xs text-slate-500 text-right tabular-nums">${pct}%</span>
             </div>`;
             }).join('');
         }

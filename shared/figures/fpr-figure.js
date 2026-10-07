@@ -29,7 +29,10 @@
     const MIN_STRATUM = 25;
 
     const X0 = 118, W = 380;        // bar start and width (viewBox units)
-    const Y0 = 52, ROW = 46, H = 22; // first bar top, row pitch, bar height
+    const Y0 = 66, ROW = 46, H = 22; // first bar top, row pitch, bar height
+    // The highlight band starts 12 above a bar; the side names above the first
+    // bar sit at SIDE_Y, clear of it, flanking that bar's split line.
+    const SIDE_Y = Y0 - 18;
     const VW = 600, VH = Y0 + ROW * COUNTS.length - 4;
 
     const rows = COUNTS.map(c => {
@@ -45,9 +48,9 @@
 
     // column heads
     el('text', { x: VW - 4, y: 18, 'text-anchor': 'end', class: 'lf-label' }, svg).textContent = 'false-positive rate';
-    // legend swatch
-    el('rect', { x: X0 + 186, y: 9, width: 12, height: 10, class: 'lf-shade' }, svg);
-    el('text', { x: X0 + 202, y: 18, class: 'lf-label' }, svg).textContent = '= flagged high risk';
+    // legend swatch, starting at the bars' left edge
+    el('rect', { x: X0, y: 9, width: 12, height: 10, class: 'lf-shade' }, svg);
+    el('text', { x: X0 + 17, y: 18, class: 'lf-label' }, svg).textContent = '= flagged high risk';
 
     const marks = rows.map((r, i) => {
         const y = Y0 + i * ROW;
@@ -61,11 +64,12 @@
         const fp = el('rect', { x: split, y, width: wNeg * r.FP / r.neg, height: H, class: 'lf-shade' }, g);
         // the bar outline and the split
         el('rect', { x: X0, y, width: W, height: H, class: 'lf-line' }, g);
-        el('line', { x1: split, y1: y - 4, x2: split, y2: y + H + 4, class: 'lf-line lf-strong' }, g);
+        // the first bar's split rises between the two side names above it
+        el('line', { x1: split, y1: i === 0 ? SIDE_Y - 9 : y - 4, x2: split, y2: y + H + 4, class: 'lf-line lf-strong' }, g);
         if (i === 0) {
             // name the two sides once, on the first bar, at its own split
-            el('text', { x: split - 5, y: y - 6, 'text-anchor': 'end', class: 'lf-label' }, svg).textContent = 'reoffended';
-            el('text', { x: split + 5, y: y - 6, class: 'lf-label' }, svg).textContent = 'did not reoffend';
+            el('text', { x: split - 6, y: SIDE_Y, 'text-anchor': 'end', class: 'lf-label' }, svg).textContent = 'reoffended';
+            el('text', { x: split + 6, y: SIDE_Y, class: 'lf-label' }, svg).textContent = 'did not reoffend';
         }
 
         el('text', { x: X0 - 10, y: y + 10, 'text-anchor': 'end', class: 'lf-label lf-label--head' }, g).textContent = r.group;
