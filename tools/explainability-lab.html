@@ -7,6 +7,7 @@
     <title>Model Explainability Lab | AI &amp; Data Ethics Toolkit</title>
     <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
+    <script src="../shared/sentiment-model.js?v=3.2.0"></script>
     <style>
 
 
@@ -482,125 +483,7 @@
 
         // Core scoring engine — returns detailed breakdown for reuse in counterfactuals
         function scoreSentiment(text) {
-            const weights = sentimentModel.weights;
-            const bigrams = sentimentModel.bigrams || {};
-            const intensifiers = sentimentModel.intensifiers || {};
-            const negatorSet = new Set(sentimentModel.negators || []);
-            const contrastiveSet = new Set(sentimentModel.contrastive || []);
-            const idfMap = sentimentModel.idf || {};
-            const aspects = sentimentModel.aspects || {};
-
-            const words = text.toLowerCase().replace(/[^\w\s']/g, '').split(/\s+/).filter(Boolean);
-
-            // Term frequency
-            const tf = {};
-            words.forEach(w => { tf[w] = (tf[w] || 0) + 1; });
-            const maxTF = Math.max(1, ...Object.values(tf));
-
-            // Detect bigrams
-            const bigramHits = [];
-            for (let i = 0; i < words.length - 1; i++) {
-                const bg = words[i] + ' ' + words[i + 1];
-                if (bigrams[bg] !== undefined) {
-                    bigramHits.push({ index: i, bigram: bg, score: bigrams[bg] });
-                }
-            }
-            const bigramIndices = new Set();
-            bigramHits.forEach(b => { bigramIndices.add(b.index); bigramIndices.add(b.index + 1); });
-
-            // Contrastive segmentation — words after 'but' get 1.5x weight
-            let contrastiveActive = false;
-            let contrastiveMultiplier = 1.0;
-
-            const wordScores = [];
-            let totalScore = sentimentModel.intercept || 0;
-            let negated = false;
-            let intensifyMultiplier = 1.0;
-            const aspectScores = {}; // aspect -> { total, count, words }
-
-            words.forEach((word, i) => {
-                // Contrastive conjunction shifts weighting
-                if (contrastiveSet.has(word)) {
-                    contrastiveActive = true;
-                    contrastiveMultiplier = 1.5; // post-contrastive clause gets more weight
-                    negated = false;
-                    intensifyMultiplier = 1.0;
-                    wordScores.push({ word, score: 0, role: 'contrastive' });
-                    return;
-                }
-
-                if (negatorSet.has(word)) {
-                    negated = true;
-                    wordScores.push({ word, score: 0, role: 'negator' });
-                    return;
-                }
-
-                if (intensifiers[word] !== undefined) {
-                    intensifyMultiplier = intensifiers[word];
-                    wordScores.push({ word, score: 0, role: 'intensifier' });
-                    return;
-                }
-
-                let score = 0;
-                let source = 'unigram';
-
-                // Check if part of a scored bigram
-                if (bigramIndices.has(i)) {
-                    const hit = bigramHits.find(b => b.index === i);
-                    if (hit) {
-                        const idf = idfMap[hit.bigram] || 4.0;
-                        score = hit.score * (idf / 3);
-                        source = 'bigram';
-                    }
-                } else if (weights[word] !== undefined) {
-                    const termFreq = 0.5 + 0.5 * (tf[word] / maxTF);
-                    const idf = idfMap[word] || 1.0;
-                    score = weights[word] * termFreq * (idf / 2);
-                }
-
-                if (negated && score !== 0) {
-                    score = -score * 0.8;
-                    negated = false;
-                }
-                if (intensifyMultiplier !== 1.0 && score !== 0) {
-                    score *= intensifyMultiplier;
-                    intensifyMultiplier = 1.0;
-                }
-                score *= contrastiveMultiplier;
-
-                // Aspect tracking
-                for (const [aspect, keywords] of Object.entries(aspects)) {
-                    if (keywords.includes(word)) {
-                        if (!aspectScores[aspect]) aspectScores[aspect] = { total: 0, count: 0, words: [] };
-                        aspectScores[aspect].words.push(word);
-                    }
-                }
-                // Assign score to nearest aspect
-                if (score !== 0) {
-                    for (const [aspect, keywords] of Object.entries(aspects)) {
-                        if (keywords.includes(word)) {
-                            if (!aspectScores[aspect]) aspectScores[aspect] = { total: 0, count: 0, words: [] };
-                            aspectScores[aspect].total += score;
-                            aspectScores[aspect].count++;
-                        }
-                    }
-                }
-
-                totalScore += score;
-                wordScores.push({ word, score, role: score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral', source });
-            });
-
-            // Add bigram scores for display
-            bigramHits.forEach(b => {
-                const idf = idfMap[b.bigram] || 4.0;
-                let s = b.score * (idf / 3) * contrastiveMultiplier;
-                wordScores.push({ word: b.bigram, score: s, role: s > 0 ? 'positive' : 'negative', source: 'bigram_display' });
-            });
-
-            const sigmoid = x => 1 / (1 + Math.exp(-x));
-            const prob = sigmoid(totalScore);
-
-            return { wordScores, totalScore, prob, aspectScores, words };
+            return SentimentModel.score(sentimentModel, text);
         }
 
         // ==================== LIME (Ribeiro et al., KDD 2016) ====================
