@@ -167,7 +167,7 @@
         'safety': 'Safety'
     };
 
-    const VERSION = '3.2.0';
+    const VERSION = '3.3.0';
 
     // Pages live either at the repo root or one level down in /tools.
     const inToolsDir = /\/tools\//.test(global.location.pathname);

@@ -5,9 +5,9 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Model Explainability Lab | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.3.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
-    <script src="../shared/sentiment-model.js?v=3.2.0"></script>
+    <script src="../shared/sentiment-model.js?v=3.3.0"></script>
     <style>
 
 
@@ -54,8 +54,8 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
-    <link rel="icon" href="../shared/favicon.svg?v=3.2.0" type="image/svg+xml">
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.3.0" />
+    <link rel="icon" href="../shared/favicon.svg?v=3.3.0" type="image/svg+xml">
 </head>
 
 <body
@@ -486,6 +486,19 @@
             return SentimentModel.score(sentimentModel, text);
         }
 
+        // Exactly 0.5 means the model scored no word at all: call it Neutral
+        // rather than letting the >= rule round "no opinion" up to Positive.
+        // The Behavioral Testing Lab uses the same rule.
+        function sentimentLabel(p) {
+            if (Math.abs(p - 0.5) < 1e-9) return 'Neutral';
+            return p > 0.5 ? 'Positive' : 'Negative';
+        }
+        const SENTIMENT_TONE = {
+            Positive: ['bg-green-500/20 text-green-500', 'bg-green-500'],
+            Negative: ['bg-red-500/20 text-red-500', 'bg-red-500'],
+            Neutral: ['bg-slate-500/20 text-slate-500', 'bg-slate-400'],
+        };
+
         // ==================== LIME (Ribeiro et al., KDD 2016) ====================
         // A real local surrogate, not a re-render of the model's own weights.
         // Procedure: perturb the instance by deleting random subsets of words,
@@ -600,16 +613,16 @@
             if (!text.trim()) return;
 
             const { wordScores, totalScore, prob, aspectScores, words } = scoreSentiment(text);
-            const label = prob >= 0.5 ? 'Positive' : 'Negative';
+            const label = sentimentLabel(prob);
             const confidence = Math.abs(prob - 0.5) * 2;
 
             // Prediction display
             const resultDiv = document.getElementById('predictionResult');
             resultDiv.classList.remove('hidden');
             document.getElementById('predLabel').textContent = label;
-            document.getElementById('predLabel').className = `px-3 py-1 rounded-full text-xs font-bold ${prob >= 0.5 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`;
+            document.getElementById('predLabel').className = `px-3 py-1 rounded-full text-xs font-bold ${SENTIMENT_TONE[label][0]}`;
             document.getElementById('predBar').style.width = `${(prob * 100).toFixed(0)}%`;
-            document.getElementById('predBar').className = `h-full rounded-full transition-all duration-500 ${prob >= 0.5 ? 'bg-green-500' : 'bg-red-500'}`;
+            document.getElementById('predBar').className = `h-full rounded-full transition-all duration-500 ${SENTIMENT_TONE[label][1]}`;
             document.getElementById('predConf').textContent = `Confidence: ${(confidence * 100).toFixed(1)}% | Raw: ${totalScore.toFixed(3)} → σ(${prob.toFixed(3)}) | Features: ${sentimentModel.feature_count || Object.keys(sentimentModel.weights).length}`;
 
             // LIME: fit a local surrogate on perturbations of THIS sentence.
@@ -693,7 +706,7 @@
 
         function generateCounterfactuals(text, wordScores, originalProb) {
             const div = document.getElementById('counterfactualResults');
-            const label = originalProb >= 0.5 ? 'Positive' : 'Negative';
+            const label = sentimentLabel(originalProb);
             const scoredWords = wordScores.filter(w => w.score !== 0 && w.source !== 'bigram_display')
                 .sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
 
@@ -708,7 +721,7 @@
                 const regex = new RegExp('\\b' + ws.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
                 const modified = text.replace(regex, '___').trim();
                 const { prob: newProb } = scoreSentiment(modified);
-                const newLabel = newProb >= 0.5 ? 'Positive' : 'Negative';
+                const newLabel = sentimentLabel(newProb);
                 const flipped = newLabel !== label;
                 const delta = newProb - originalProb;
                 counterfactuals.push({ word: ws.word, newProb, flipped, delta, original: ws.score });
@@ -717,8 +730,8 @@
             div.innerHTML = counterfactuals.map(cf => {
                 const icon = cf.flipped ? '⇄' : '→';
                 const flipBadge = cf.flipped
-                    ? `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-500">FLIPS to ${cf.newProb >= 0.5 ? 'Positive' : 'Negative'}</span>`
-                    : `<span class="text-xs text-slate-500">stays ${cf.newProb >= 0.5 ? 'Positive' : 'Negative'} (${(cf.newProb * 100).toFixed(0)}%)</span>`;
+                    ? `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-500">FLIPS to ${sentimentLabel(cf.newProb)}</span>`
+                    : `<span class="text-xs text-slate-500">stays ${sentimentLabel(cf.newProb)} (${(cf.newProb * 100).toFixed(0)}%)</span>`;
                 return `<div class="flex items-center justify-between p-2.5 rounded-lg border ${cf.flipped ? 'border-orange-500/40 bg-orange-500/5' : 'border-slate-200 dark:border-slate-700'} text-sm">
                     <div class="flex items-center gap-2">
                         <span class="text-base">${icon}</span>
@@ -977,8 +990,8 @@
         // ==================== INIT ====================
         loadSentimentModel().then(() => analyzeSentiment());
     </script>
-    <script src="../shared/session.js?v=3.2.0"></script>
-    <script src="../shared/toolkit.js?v=3.2.0"></script>
+    <script src="../shared/session.js?v=3.3.0"></script>
+    <script src="../shared/toolkit.js?v=3.3.0"></script>
     <script>
         Toolkit.mountShell({ active: 'explainability-lab' });
         ToolkitSession.maybeOfferConsent();

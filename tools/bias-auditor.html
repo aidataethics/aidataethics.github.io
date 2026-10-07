@@ -7,7 +7,7 @@
     <title>Dataset Bias Auditor | AI &amp; Data Ethics Toolkit</title>
     <meta name="description"
         content="Scan datasets for representation imbalances and historical bias patterns before training starts." />
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.3.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <script src="../vendor/papaparse-5.4.1.min.js"></script>
     <style>
@@ -67,9 +67,9 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
-    <link rel="stylesheet" href="../shared/line-figure.css?v=3.2.0" />
-    <link rel="icon" href="../shared/favicon.svg?v=3.2.0" type="image/svg+xml">
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.3.0" />
+    <link rel="stylesheet" href="../shared/line-figure.css?v=3.3.0" />
+    <link rel="icon" href="../shared/favicon.svg?v=3.3.0" type="image/svg+xml">
 </head>
 
 <body
@@ -1210,8 +1210,8 @@ Sample datasets are synthetic; see <code>data/generate_samples.py</code> for the
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
     </script>
-    <script src="../shared/session.js?v=3.2.0"></script>
-    <script src="../shared/toolkit.js?v=3.2.0"></script>
+    <script src="../shared/session.js?v=3.3.0"></script>
+    <script src="../shared/toolkit.js?v=3.3.0"></script>
     <script>
         Toolkit.mountShell({ active: 'bias-auditor' });
         ToolkitSession.maybeOfferConsent();
@@ -1266,8 +1266,8 @@ Sample datasets are synthetic; see <code>data/generate_samples.py</code> for the
             ToolkitSession?.record('dataset.load', { dataset: type });
         };
     </script>
-    <script src="../shared/line-figure.js?v=3.2.0"></script>
-    <script src="../shared/figures/fpr-figure.js?v=3.2.0"></script>
+    <script src="../shared/line-figure.js?v=3.3.0"></script>
+    <script src="../shared/figures/fpr-figure.js?v=3.3.0"></script>
 </body>
 
 </html>

@@ -35,11 +35,11 @@
     const TESTS = [
         // Vocabulary
         { id: 'voc-pos', capability: 'Vocabulary', type: 'MFT', name: 'Positive adjectives',
-          template: 'This is a {pos_adj} {noun}.', expect: 'positive', n: 40 },
+          template: 'The {noun} is {pos_adj}.', expect: 'positive', n: 40 },
         { id: 'voc-neg', capability: 'Vocabulary', type: 'MFT', name: 'Negative adjectives',
-          template: 'This is a {neg_adj} {noun}.', expect: 'negative', n: 40 },
+          template: 'The {noun} is {neg_adj}.', expect: 'negative', n: 40 },
         { id: 'voc-neutral', capability: 'Vocabulary', type: 'MFT', name: 'Neutral adjectives carry no sentiment',
-          template: 'This is a {neutral_adj} {noun}.', expect: 'neutral', n: 30 },
+          template: 'The {noun} is {neutral_adj}.', expect: 'neutral', n: 30 },
         { id: 'voc-verbs', capability: 'Vocabulary', type: 'MFT', name: 'Positive verbs',
           template: 'I {pos_verb} this {noun}.', expect: 'positive', n: 30 },
         { id: 'voc-intens', capability: 'Vocabulary', type: 'MFT', name: 'Intensified negative adjectives',
