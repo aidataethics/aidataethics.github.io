@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
@@ -7,29 +7,13 @@
     <title>Dataset Bias Auditor | AI &amp; Data Ethics Toolkit</title>
     <meta name="description"
         content="Scan datasets for representation imbalances and historical bias patterns before training starts." />
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <script src="../vendor/papaparse-5.4.1.min.js"></script>
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
 
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
 
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
 
         .modal-log::-webkit-scrollbar {
             width: 6px;
@@ -56,32 +40,43 @@
         }
     </style>
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
+    <link rel="stylesheet" href="../shared/line-figure.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
     class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 md:gap-0">
             <div class="flex items-center w-full md:w-auto justify-between">
                 <div>
@@ -111,13 +106,39 @@
             </label>
         </header>
 
+        <section aria-labelledby="fprHeading"
+            class="mb-6 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl px-5 py-5 md:px-8">
+            <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-6 items-start">
+                <div>
+                    <h2 id="fprHeading">Same score, unequal mistakes</h2>
+                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        The recidivism sample's risk score never sees race. Yet among people who did
+                        <em>not</em> go on to reoffend, it flags Black defendants as high risk far more often than
+                        White defendants. Selection rates hide this; you need the confusion matrix, which needs
+                        ground truth.</p>
+                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Work one row out by hand first: count the people right of the line, then the shaded ones
+                        among them. Then load the <strong>Recidivism</strong> sample below and check the auditor
+                        gets the same number.</p>
+                </div>
+                <figure class="chart-figure">
+                    <div id="fpr-figure" class="project-figure__canvas"></div>
+                    <figcaption class="mt-2 text-sm">
+                        <span id="fpr-figure-readout" class="chart-figure__readout font-serif italic text-base" aria-live="polite"></span>
+                        <span class="project-figure__note">From data/recidivism-sample.csv (synthetic). Flagged = PredictedRisk High.
+                            * fewer than 25 people did not reoffend, too few to compare.</span>
+                    </figcaption>
+                </figure>
+            </div>
+        </section>
+
         <!-- Data Source -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
             <div
                 class="lg:col-span-3 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                     <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">upload_file</span> Data Source
-                </h3>
+                </h2>
                 <div class="flex gap-4 mb-4">
                     <label class="flex-1 cursor-pointer">
                         <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center hover:border-primary transition-colors"
@@ -147,7 +168,7 @@
 
             <!-- Audit Config -->
             <div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Audit Configuration</h3>
+                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Audit Configuration</h2>
                 <div class="space-y-3">
                     <div>
                         <label for="protectedAttr" class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Protected attribute</label>
@@ -169,7 +190,7 @@
                             class="w-full px-3 py-1.5 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 focus:ring-primary focus:border-primary">
                             <option value="">—</option>
                         </select>
-                        <p class="text-[10px] text-slate-400 mt-1 leading-snug">Which outcome benefits the person. This is
+                        <p class="text-xs text-slate-400 mt-1 leading-snug">Which outcome benefits the person. This is
                             a value judgement, not a property of the data — you have to make it.</p>
                     </div>
                     <div class="pt-1 border-t border-slate-200 dark:border-slate-700/60">
@@ -186,7 +207,7 @@
                             <option value="">—</option>
                         </select>
                     </div>
-                    <p id="configHint" class="text-[11px] text-amber-600 dark:text-amber-400 leading-snug"></p>
+                    <p id="configHint" class="text-xs text-amber-600 dark:text-amber-400 leading-snug"></p>
                     <button onclick="runAudit()" id="runAuditBtn"
                         class="w-full py-2 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed">
                         <span class="material-icons-outlined mr-1 text-base" aria-hidden="true">play_arrow</span> Run Audit
@@ -199,9 +220,9 @@
         <div id="dataPreview"
             class="hidden mb-6 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">
                     <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">table_chart</span> Data Preview
-                </h3>
+                </h2>
                 <span id="dataInfo" class="text-sm text-slate-500 dark:text-slate-400"></span>
             </div>
             <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
@@ -222,10 +243,10 @@
                 <!-- Distribution Chart -->
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                         <span class="material-icons-outlined text-orange-500 mr-2 align-middle" aria-hidden="true">bar_chart</span> Class
                         Distribution
-                    </h3>
+                    </h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Distribution of the target variable
                         across protected attribute groups.</p>
                     <div id="distributionChart" class="h-[350px]"></div>
@@ -234,10 +255,10 @@
                 <!-- Representation -->
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                         <span class="material-icons-outlined text-blue-500 mr-2 align-middle" aria-hidden="true">pie_chart</span> Group
                         Representation
-                    </h3>
+                    </h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Proportion of each group in the dataset.
                     </p>
                     <div id="representationChart" class="h-[350px]"></div>
@@ -248,10 +269,10 @@
                 <!-- Correlation Matrix -->
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                         <span class="material-icons-outlined text-purple-500 mr-2 align-middle" aria-hidden="true">grid_on</span>
                         Correlation Heatmap
-                    </h3>
+                    </h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Pearson correlation between numeric
                         features.</p>
                     <div id="correlationChart" class="h-[400px]"></div>
@@ -260,10 +281,10 @@
                 <!-- Fairness Metrics -->
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                         <span class="material-icons-outlined text-green-500 mr-2 align-middle" aria-hidden="true">assessment</span>
                         Fairness Metrics
-                    </h3>
+                    </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Selection-rate metrics need only the
                         decision column. Error-rate metrics also need ground truth, and are disabled without it.</p>
                     <div id="fairnessMetrics" class="space-y-4"></div>
@@ -272,10 +293,10 @@
 
             <!-- Intersectional Analysis -->
             <div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                     <span class="material-icons-outlined text-pink-500 mr-2 align-middle" aria-hidden="true">diversity_3</span>
                     Intersectional Analysis
-                </h3>
+                </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Bias can be amplified at intersections of
                     multiple attributes (e.g., race × gender). This analysis checks for compound effects.</p>
                 <div id="intersectionalResults" class="space-y-3"></div>
@@ -455,8 +476,8 @@
             else if (!truth) msg = 'No ground truth selected — error-rate metrics will be unavailable.';
             hint.textContent = msg;
             hint.className = msg && !favSel.value
-                ? 'text-[11px] text-amber-600 dark:text-amber-400 leading-snug'
-                : 'text-[11px] text-slate-400 leading-snug';
+                ? 'text-xs text-amber-600 dark:text-amber-400 leading-snug'
+                : 'text-xs text-slate-400 leading-snug';
             btn.disabled = !favSel.value || (truth && !truthSel.value);
         }
 
@@ -539,7 +560,7 @@
                 xaxis: { color: isDark ? '#94a3b8' : '#475569' },
                 yaxis: { color: isDark ? '#94a3b8' : '#475569', title: 'Count' },
                 legend: { font: { color: isDark ? '#94a3b8' : '#475569' } },
-                font: { family: 'Space Grotesk' }
+                font: { family: 'IBM Plex Sans' }
             }, { responsive: true, displayModeBar: false });
         }
 
@@ -559,7 +580,7 @@
                 margin: { t: 10, l: 10, r: 10, b: 10 },
                 paper_bgcolor: 'transparent',
                 legend: { font: { color: isDark ? '#94a3b8' : '#475569' } },
-                font: { family: 'Space Grotesk' }
+                font: { family: 'IBM Plex Sans' }
             }, { responsive: true, displayModeBar: false });
         }
 
@@ -602,7 +623,7 @@
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 xaxis: { color: isDark ? '#94a3b8' : '#475569', tickangle: -45 },
                 yaxis: { color: isDark ? '#94a3b8' : '#475569' },
-                font: { family: 'Space Grotesk' }
+                font: { family: 'IBM Plex Sans' }
             }, { responsive: true, displayModeBar: false });
         }
 
@@ -814,7 +835,7 @@
             <div class="mt-4 overflow-x-auto">
                 <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Confusion matrix by group
                     <span class="font-normal text-slate-400">— decision “${esc(favorableVal)}” vs ground truth “${esc(truthPositiveVal)}”</span></p>
-                <p class="text-[10px] text-slate-400 mb-2 leading-snug">Rates are defined relative to the favorable
+                <p class="text-xs text-slate-400 mb-2 leading-snug">Rates are defined relative to the favorable
                     outcome you chose. A person wrongly <em>denied</em> the favorable outcome counts here as a false
                     negative. ProPublica's COMPAS analysis scored the high-risk flag as the positive class, so what they
                     called a false positive is the false <em>negative</em> in this table — same people, opposite sign.</p>
@@ -849,18 +870,18 @@
                     : (m.direction === '>=' ? m.value >= m.threshold : m.value <= m.threshold);
                 const statusColor = pass === true ? 'text-green-500' : pass === false ? 'text-red-500' : 'text-slate-400';
                 const badge = pass === true
-                    ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-600 dark:text-green-400 ml-2">✓ PASS</span>'
+                    ? '<span class="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-600 dark:text-green-400 ml-2">✓ PASS</span>'
                     : pass === false
-                        ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-600 dark:text-red-400 ml-2">✗ FAIL</span>'
+                        ? '<span class="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-600 dark:text-red-400 ml-2">✗ FAIL</span>'
                         : m.direction
-                            ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-500 ml-2">— UNAVAILABLE</span>'
+                            ? '<span class="text-xs px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-500 ml-2">— UNAVAILABLE</span>'
                             : '';
                 return `<div class="flex justify-between items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-surface-dark-lighter">
                         <div class="flex items-center gap-2">
                             <span class="material-icons-outlined text-sm ${statusColor}" aria-hidden="true">${m.icon}</span>
                             <div>
                                 <p class="text-xs font-medium text-slate-700 dark:text-slate-300">${esc(m.name)}${badge}</p>
-                                <p class="text-[10px] text-slate-400">${esc(m.desc)}</p>
+                                <p class="text-xs text-slate-400">${esc(m.desc)}</p>
                             </div>
                         </div>
                         <span class="text-sm font-bold tabular-nums ${statusColor}">${m.value === null ? '—' : m.value.toFixed(3)}</span>
@@ -873,7 +894,7 @@
                     ? `✓ ${scored.length} of ${scored.length} computable metrics pass`
                     : `✗ ${failed.length} of ${scored.length} computable metrics fail: ${failed.map(m => esc(m.name)).join(', ')}`}
                 </p>
-                ${unavailable.length ? `<p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                ${unavailable.length ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     ${unavailable.length} metric${unavailable.length > 1 ? 's' : ''} could not be computed without a ground-truth column.
                     Selection rates tell you who was chosen; they cannot tell you who was chosen <em>wrongly</em>.</p>` : ''}
             </div>
@@ -929,7 +950,7 @@
                 return `<div class="p-3 rounded-lg border ${color}">
                             <p class="text-xs font-medium text-slate-700 dark:text-slate-300 truncate" title="${r.name}">${r.name}</p>
                             <p class="text-lg font-bold ${r.rate === minCross ? 'text-red-500' : r.rate === maxCross ? 'text-green-500' : 'text-slate-700 dark:text-slate-300'}">${(r.rate * 100).toFixed(1)}%</p>
-                            <p class="text-[10px] text-slate-400">n=${r.n}</p>
+                            <p class="text-xs text-slate-400">n=${r.n}</p>
                         </div>`;
             }).join('')}
                 </div>
@@ -937,7 +958,7 @@
                     <p class="text-xs font-bold ${crossDI >= 0.8 ? 'text-green-500' : 'text-red-500'}">
                         Intersectional Disparate Impact: ${crossDI.toFixed(3)} ${crossDI >= 0.8 ? '(PASS)' : '(FAIL — bias amplified at intersection)'}
                     </p>
-                    <p class="text-[10px] text-slate-400 mt-1">Gap: ${crossRates[crossRates.length - 1]?.name} (${(maxCross * 100).toFixed(1)}%) vs ${crossRates[0]?.name} (${(minCross * 100).toFixed(1)}%)</p>
+                    <p class="text-xs text-slate-400 mt-1">Gap: ${crossRates[crossRates.length - 1]?.name} (${(maxCross * 100).toFixed(1)}%) vs ${crossRates[0]?.name} (${(minCross * 100).toFixed(1)}%)</p>
                 </div>
             `;
         }
@@ -1040,15 +1061,40 @@
                 }
             }
 
+            // One ranked Findings panel instead of a stack of coloured boxes.
+            // Seven alarms of equal weight bury the one that matters, so items
+            // are ordered by severity, each marked with a word as well as a
+            // colour, and counted in the heading. Finding text stays in <p>
+            // elements because the report export reads '#alerts p'.
             const alertsDiv = document.getElementById('alerts');
-            alertsDiv.innerHTML = alerts.map(a => {
-                const colors = { warning: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400', caution: 'bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400', danger: 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400' };
-                const icons = { warning: 'warning', caution: 'error_outline', danger: 'dangerous' };
-                return `<div class="flex items-start p-4 rounded-xl border ${colors[a.type]}">
-                <span class="material-icons-outlined mr-3 mt-0.5" aria-hidden="true">${icons[a.type]}</span>
-                <p class="text-sm">${esc(a.text)}</p>
-            </div>`;
-            }).join('');
+            const LEVELS = {
+                danger:  { rank: 0, word: 'Fails',     cls: 'text-red-600 dark:text-red-400',       mark: '✗' },
+                caution: { rank: 1, word: 'Trade-off', cls: 'text-amber-600 dark:text-amber-400',   mark: '⇄' },
+                warning: { rank: 2, word: 'Data note', cls: 'text-slate-500 dark:text-slate-400',   mark: '·' }
+            };
+            const ordered = alerts.slice().sort((a, b) => LEVELS[a.type].rank - LEVELS[b.type].rank);
+            const count = t => alerts.filter(a => a.type === t).length;
+            const tally = [['danger', 'failing check'], ['caution', 'trade-off'], ['warning', 'data note']]
+                .filter(([t]) => count(t))
+                .map(([t, w]) => `<span class="${LEVELS[t].cls}">${count(t)} ${w}${count(t) > 1 ? 's' : ''}</span>`)
+                .join('<span class="text-slate-400" aria-hidden="true"> · </span>');
+
+            alertsDiv.innerHTML = !alerts.length ? '' : `
+                <section aria-labelledby="findingsHeading"
+                    class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl">
+                    <header class="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4 pb-3 border-b border-slate-200 dark:border-slate-700/60">
+                        <h2 id="findingsHeading">Findings</h2>
+                        <span class="text-sm tabular-nums">${tally}</span>
+                    </header>
+                    <ol class="divide-y divide-slate-200 dark:divide-slate-700/60">
+                        ${ordered.map(a => `
+                        <li class="grid grid-cols-[6.5rem_1fr] gap-3 px-5 py-3">
+                            <span class="text-xs font-semibold uppercase tracking-wider pt-0.5 ${LEVELS[a.type].cls}">
+                                <span aria-hidden="true">${LEVELS[a.type].mark}</span> ${LEVELS[a.type].word}</span>
+                            <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed max-w-[75ch]">${esc(a.text)}</p>
+                        </li>`).join('')}
+                    </ol>
+                </section>`;
         }
 
         // ==================== EXPORT ====================
@@ -1164,8 +1210,8 @@ Sample datasets are synthetic; see <code>data/generate_samples.py</code> for the
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
     </script>
-    <script src="../shared/session.js?v=3.1.0"></script>
-    <script src="../shared/toolkit.js?v=3.1.0"></script>
+    <script src="../shared/session.js?v=3.2.0"></script>
+    <script src="../shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: 'bias-auditor' });
         ToolkitSession.maybeOfferConsent();
@@ -1220,6 +1266,8 @@ Sample datasets are synthetic; see <code>data/generate_samples.py</code> for the
             ToolkitSession?.record('dataset.load', { dataset: type });
         };
     </script>
+    <script src="../shared/line-figure.js?v=3.2.0"></script>
+    <script src="../shared/figures/fpr-figure.js?v=3.2.0"></script>
 </body>
 
 </html>

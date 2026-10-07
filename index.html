@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
@@ -7,27 +7,11 @@
     <title>AI &amp; Data Ethics Toolkit</title>
     <meta name="description"
         content="An interactive toolkit for exploring AI ethics concepts including bias detection, model explainability, adversarial robustness, and more." />
-    <link rel="stylesheet" href="shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="shared/tailwind.css?v=3.2.0" />
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
 
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
 
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
 
         .light ::-webkit-scrollbar-track {
             background: #f1f5f9;
@@ -38,236 +22,138 @@
         }
     </style>
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="shared/toolkit.css?v=3.2.0" />
+    <link rel="stylesheet" href="shared/line-figure.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
     class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <!-- Main Content -->
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 md:gap-0">
-            <div class="flex items-center w-full md:w-auto justify-between">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Toolkit Overview</h1>
-                    <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm md:text-base">Select a tool to begin your
-                        analysis.</p>
-                </div>
-                <!-- Mobile Menu Button -->
-                <button id="openSidebar" type="button" aria-label="Open navigation" class="md:hidden p-2 text-slate-500 hover:text-primary transition-colors">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 px-5 md:px-12 py-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
+        <header class="flex items-start justify-between gap-4 mb-6">
+            <div class="max-w-2xl">
+                <p class="eyebrow mb-2">CS 295 · Practical AI Ethics &amp; Algorithmic Auditing</p>
+                <h1 class="text-slate-900 dark:text-slate-100">Measure it by hand, then at scale.</h1>
+                <p class="mt-3 text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-[62ch]">
+                    Nine instruments for auditing data and models, used in twelve labs. Each lab takes a quantity
+                    you first work out on paper in lecture &mdash; a selection rate, an equivalence class, a cosine
+                    &mdash; and measures it on real data in your browser. Nothing you load or type here leaves your
+                    computer.</p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button id="openSidebar" type="button" aria-label="Open navigation"
+                    class="md:hidden p-2 text-slate-500 hover:text-primary transition-colors">
                     <span class="material-icons-outlined text-2xl" aria-hidden="true">menu</span>
                 </button>
-            </div>
-            <div class="flex space-x-3 items-center self-end md:self-auto">
-                <!-- Theme Toggle -->
-                <div class="flex items-center mr-2">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="themeToggle" class="sr-only peer" checked />
-                        <div
-                            class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
-                        </div>
-                        <span class="ml-2 text-sm text-slate-500 dark:text-slate-400">
-                            <span class="material-icons-outlined text-sm align-middle" aria-hidden="true">dark_mode</span>
-                        </span>
-                    </label>
-                </div>
-                <a href="user-guide.html"
-                    class="flex items-center justify-center px-4 py-2 rounded-lg bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-primary hover:border-primary transition-all text-sm font-medium">
-                    <span class="material-icons-outlined mr-2 text-lg" aria-hidden="true">description</span>
-                    User Guide
-                </a>
-                <a href="settings.html"
-                    class="flex items-center justify-center w-10 h-10 rounded-lg bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-primary hover:border-primary transition-all">
-                    <span class="material-icons-outlined text-xl" aria-hidden="true">settings</span>
-                </a>
+                <label class="relative inline-flex items-center cursor-pointer" title="Dark theme">
+                    <input type="checkbox" id="themeToggle" class="sr-only peer" />
+                    <span class="w-10 h-6 bg-slate-300 rounded-full dark:bg-slate-700 peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-primary"></span>
+                    <span class="material-icons-outlined text-base ml-1.5 text-slate-500" aria-hidden="true">dark_mode</span>
+                </label>
             </div>
         </header>
 
-        <!-- Search and Filter -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h3 class="text-xl font-bold text-slate-900 dark:text-white">All Tools</h3>
-            <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
-                <div class="relative w-full md:w-auto">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span class="material-icons-outlined text-slate-400" aria-hidden="true">search</span>
-                    </span>
-                    <input id="toolSearch"
-                        class="pl-10 pr-4 py-1.5 text-sm rounded-md bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 focus:ring-primary focus:border-primary w-full md:w-64"
-                        placeholder="Search tools..." type="text" />
-                </div>
-                <select id="categoryFilter"
-                    class="pl-3 pr-8 py-1.5 text-sm rounded-md bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 focus:ring-primary focus:border-primary w-full md:w-auto">
-                    <option value="all">All Categories</option>
-                    <option value="word-spaces">Word Spaces</option>
-                    <option value="explainability">Explainability</option>
-                    <option value="fairness">Fairness Lab</option>
-                    <option value="privacy">Privacy</option>
-                    <option value="safety">Safety</option>
-                </select>
+        <figure class="project-figure mb-10" style="max-width:500px">
+            <div id="course-figure" class="project-figure__canvas" aria-describedby="course-figure-readout"></div>
+            <figcaption><span id="course-figure-readout" aria-live="polite"></span>
+                <span class="project-figure__note">Arrow keys or pointer to pick a lab; Enter or click opens its tool.</span>
+            </figcaption>
+        </figure>
+
+        <section aria-labelledby="labsHeading" class="max-w-4xl w-full">
+            <div class="flex items-baseline justify-between border-b border-slate-900/80 dark:border-slate-300/60 pb-2">
+                <h2 id="labsHeading" class="text-xl text-slate-900 dark:text-slate-100">The labs, in course order</h2>
+                <a href="user-guide.html" class="text-sm text-primary hover:underline">How to use the toolkit</a>
             </div>
-        </div>
+            <ol id="toolList" class="divide-y divide-slate-200 dark:divide-slate-700/60"></ol>
+        </section>
 
-        <!-- Tools Grid -->
-        <div id="toolsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-8">
-        </div>
-
+        <section class="max-w-4xl w-full mt-10 grid sm:grid-cols-2 gap-6 text-sm text-slate-600 dark:text-slate-300">
+            <div>
+                <h2 class="text-base text-slate-900 dark:text-slate-100 mb-1">Your data stays here</h2>
+                <p class="leading-relaxed">Every tool runs in the browser. Uploaded files are read locally and never
+                    sent anywhere. Some labs ask you to hand in a session record; it is off until you turn it on, and
+                    you can read every line of it in <a class="text-primary hover:underline" href="settings.html">Settings</a>.</p>
+            </div>
+            <div>
+                <h2 class="text-base text-slate-900 dark:text-slate-100 mb-1">The data is synthetic, on purpose</h2>
+                <p class="leading-relaxed">The sample datasets are generated from documented processes, so every
+                    disparity you find can be traced to a line of code. The generators are in the
+                    <a class="text-primary hover:underline" href="https://github.com/aidataethics/aidataethics.github.io/tree/main/data">project repository</a>.</p>
+            </div>
+        </section>
     </main>
 
     <script>
-
-        // ==================== TOOLS DATA ====================
-        const tools = [
-            {
-                id: 'word-embeddings',
-                name: 'Word Embeddings Workbench',
-                description: 'Visualize semantic relationships and explore gender biases in vector space using pre-trained models.',
-                icon: 'scatter_plot',
-                color: 'blue',
-                category: 'word-spaces',
-                href: 'tools/word-embeddings.html'
-            },
-            {
-                id: 'explainability-lab',
-                name: 'Model Explainability Lab',
-                description: 'Compare a sampled LIME surrogate against exact Shapley values on text, lending, health and risk-scoring models.',
-                icon: 'visibility',
-                color: 'purple',
-                category: 'explainability',
-                href: 'tools/explainability-lab.html'
-            },
-            {
-                id: 'bias-auditor',
-                name: 'Dataset Bias Auditor',
-                description: 'Compute selection-rate and error-rate fairness metrics from a real confusion matrix, and see why they conflict.',
-                icon: 'saved_search',
-                color: 'orange',
-                category: 'fairness',
-                href: 'tools/bias-auditor.html'
-            },
-            {
-                id: 'adversarial-sandbox',
-                name: 'Adversarial Robustness Sandbox',
-                description: 'Test model resilience by generating adversarial attacks and evaluating failure modes.',
-                icon: 'security',
-                color: 'red',
-                category: 'safety',
-                href: 'tools/adversarial-sandbox.html'
-            },
-            {
-                id: 'filter-bubble',
-                name: 'Filter Bubble Simulator',
-                description: 'Observe how recommendation algorithms create echo chambers through feedback loops.',
-                icon: 'bubble_chart',
-                color: 'teal',
-                category: 'fairness',
-                href: 'tools/filter-bubble.html'
-            },
-            {
-                id: 'privacy-lab',
-                name: 'Privacy & Anonymization Lab',
-                description: 'Apply differential privacy techniques and k-anonymity to protect sensitive user data.',
-                icon: 'vpn_key',
-                color: 'indigo',
-                category: 'privacy',
-                href: 'tools/privacy-lab.html'
-            },
-            {
-                id: 'value-alignment',
-                name: 'Value Alignment Tool',
-                description: 'Work through 12 real AI dilemmas and see your choices mapped across five ethical frameworks.',
-                icon: 'balance',
-                color: 'pink',
-                category: 'safety',
-                href: 'tools/value-alignment.html'
-            },
-            
-            {
-                id: 'llm-sandbox',
-                name: 'LLM Ethical Sandbox',
-                description: 'Explore AI behavior and ethical boundaries using the LFM2.5 model, running privately via WebGPU.',
-                icon: 'chat',
-                color: 'emerald',
-                category: 'safety',
-                href: 'tools/llm-sandbox.html'
-            },
-            {
-                id: 'proxy-detector',
-                name: 'Proxy Variable Detector',
-                description: 'Measure how strongly ordinary features encode protected attributes, using the right statistic for each pair.',
-                icon: 'find_replace',
-                color: 'cyan',
-                category: 'fairness',
-                href: 'tools/proxy-detector.html'
-            }
-        ];
-
-        // ==================== RENDER TOOLS ====================
-        function renderTools(filteredTools) {
-            const grid = document.getElementById('toolsGrid');
-            grid.innerHTML = filteredTools.map(tool => `
-            <div class="group bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 hover:border-primary/40 dark:hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/5 flex flex-col h-full" data-category="${tool.category}">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="w-12 h-12 rounded-lg bg-${tool.color}-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <span class="material-icons-outlined text-${tool.color}-500 text-2xl" aria-hidden="true">${tool.icon}</span>
-                    </div>
-                </div>
-                <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-2 leading-tight">${tool.name}</h4>
-                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 flex-grow">${tool.description}</p>
-                <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                    <a href="${tool.href}" class="w-full py-2 bg-slate-50 dark:bg-slate-800 hover:bg-primary hover:text-white dark:hover:bg-primary rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center justify-center">
-                        Launch
-                        <span class="material-icons-outlined ml-2 text-base" aria-hidden="true">arrow_forward</span>
+        // The list is built from Toolkit.TOOLS so the overview, the sidebar and
+        // each tool's own header can never disagree about names or questions.
+        function renderToolList() {
+            const list = document.getElementById('toolList');
+            const esc = Toolkit.esc;
+            const rows = Toolkit.TOOLS.map(t => `
+                <li>
+                    <a href="${esc(Toolkit.toolHref(t))}"
+                       class="group grid grid-cols-[4.5rem_1fr_auto] gap-4 items-baseline py-4 hover:bg-primary/5 -mx-2 px-2 rounded transition-colors">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 tabular-nums">${esc(t.lab)}</span>
+                        <span>
+                            <span class="block font-medium text-slate-900 dark:text-slate-100 group-hover:text-primary">${esc(t.name)}</span>
+                            <span class="block font-serif italic text-[1.02rem] text-slate-600 dark:text-slate-300 mt-0.5">${esc(t.question)}</span>
+                        </span>
+                        <span class="material-icons-outlined text-lg text-slate-400 group-hover:text-primary transition-colors" aria-hidden="true">arrow_forward</span>
                     </a>
-                </div>
-            </div>
-        `).join('');
+                </li>`);
+            rows.push(`
+                <li class="grid grid-cols-[4.5rem_1fr_auto] gap-4 items-baseline py-4 -mx-2 px-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 tabular-nums">Lab 12</span>
+                    <span>
+                        <span class="block font-medium text-slate-900 dark:text-slate-100">Capstone: a full pipeline audit</span>
+                        <span class="block font-serif italic text-[1.02rem] text-slate-600 dark:text-slate-300 mt-0.5">
+                            Back through the Bias Auditor, Proxy Detector, Explainability Lab and Adversarial Sandbox,
+                            on one system, ending in an algorithmic impact statement.</span>
+                    </span>
+                    <span></span>
+                </li>`);
+            list.innerHTML = rows.join('');
         }
-
-        renderTools(tools);
-
-        // ==================== SEARCH & FILTER ====================
-        const searchInput = document.getElementById('toolSearch');
-        const categoryFilter = document.getElementById('categoryFilter');
-
-        function filterTools() {
-            const query = searchInput.value.toLowerCase();
-            const category = categoryFilter.value;
-            const filtered = tools.filter(t => {
-                const matchesSearch = t.name.toLowerCase().includes(query) || t.description.toLowerCase().includes(query);
-                const matchesCategory = category === 'all' || t.category === category;
-                return matchesSearch && matchesCategory;
-            });
-            renderTools(filtered);
-        }
-
-        searchInput.addEventListener('input', filterTools);
-        categoryFilter.addEventListener('change', filterTools);
     </script>
-    <script src="shared/session.js?v=3.1.0"></script>
-    <script src="shared/toolkit.js?v=3.1.0"></script>
+    <script src="shared/session.js?v=3.2.0"></script>
+    <script src="shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: 'overview' });
+        renderToolList();
         ToolkitSession.maybeOfferConsent();
     </script>
+    <script src="shared/line-figure.js?v=3.2.0"></script>
+    <script src="shared/figures/course-figure.js?v=3.2.0"></script>
 </body>
 
 </html>

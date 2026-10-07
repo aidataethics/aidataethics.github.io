@@ -1,65 +1,53 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>User Guide | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
-    <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
-    </style>
+    <link rel="stylesheet" href="shared/tailwind.css?v=3.2.0" />
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="shared/toolkit.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
     class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 md:gap-0">
             <div class="flex items-center w-full md:w-auto justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-slate-900 dark:text-white">User Guide</h1>
-                    <p class="text-slate-500 dark:text-slate-400 mt-1">Learn how to use the interactive tools in this
-                        kit.</p>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1">What each tool runs on, how to use it, and what it measures.</p>
                 </div>
                 <!-- Mobile Menu Button -->
                 <button id="openSidebar" type="button" aria-label="Open navigation" class="md:hidden p-2 text-slate-500 hover:text-primary transition-colors">
@@ -76,92 +64,224 @@
             </label>
         </header>
 
-        <div class="space-y-8 max-w-4xl">
-            <section class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3 flex items-center">
-                    <span class="material-icons-outlined text-primary mr-2" aria-hidden="true">scatter_plot</span> Word Embeddings
-                </h2>
-                <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                    This tool helps you explore semantic relationships in word vector spaces (GloVe). You can visualize
-                    how words are grouped based on meaning and perform vector arithmetic (e.g., King - Man + Woman =
-                    Queen).
-                </p>
-                <div class="bg-slate-50 dark:bg-surface-dark-lighter p-4 rounded-lg">
-                    <h4 class="font-semibold text-sm mb-2 text-slate-700 dark:text-slate-300">How to use:</h4>
-                    <ul class="list-disc list-inside text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                        <li><strong>Visualize:</strong> Enter words to see their 2D projection (using PCA).</li>
-                        <li><strong>Analogies:</strong> Use the "Analogy" tab to solve word analogies.</li>
-                        <li><strong>Bias:</strong> Use the "Bias" tab to see gender associations with different
-                            professions or adjectives.</li>
-                    </ul>
-                </div>
+        <div class="max-w-3xl w-full space-y-10">
+            <section aria-labelledby="basics-h" class="text-sm text-slate-700 dark:text-slate-300 space-y-3">
+                <h2 id="basics-h" class="text-2xl text-slate-900 dark:text-slate-100">Before you start</h2>
+                <p>Every tool runs in your browser. Datasets you load and text you type stay on your computer; nothing is sent to a server.
+                    If you turn on the session record, it keeps the tools you opened, when, and the settings you chose — in this browser only, with no name or ID.
+                    <a href="settings.html" class="text-primary hover:underline">Settings</a> shows all of it, and lets you download it for a lab report or erase it.</p>
+                <p>Each lab has two halves: you work a small case by hand on the worksheet first, then use the tool to run the same idea at scale.
+                    The figures at the top of some tools show the worked case — pick an item with the pointer or the arrow keys to read its numbers.</p>
+                <p>Where a tool has <strong>Copy link to this configuration</strong>, the link reopens the tool with your exact settings — paste it into your lab report.</p>
+                <nav aria-label="Tools in this guide">
+                    <ol class="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1">
+                    <li><a href="#word-embeddings" class="text-primary hover:underline">Lab 1 · Word Embeddings Workbench</a></li>
+                    <li><a href="#proxy-detector" class="text-primary hover:underline">Lab 2 · Proxy Variable Detector</a></li>
+                    <li><a href="#bias-auditor" class="text-primary hover:underline">Lab 3 · Dataset Bias Auditor</a></li>
+                    <li><a href="#filter-bubble" class="text-primary hover:underline">Lab 4 · Filter Bubble Simulator</a></li>
+                    <li><a href="#privacy-lab" class="text-primary hover:underline">Labs 5–6 · Privacy &amp; Anonymization Lab</a></li>
+                    <li><a href="#explainability-lab" class="text-primary hover:underline">Labs 7–8 · Model Explainability Lab</a></li>
+                    <li><a href="#adversarial-sandbox" class="text-primary hover:underline">Lab 9 · Adversarial Robustness Sandbox</a></li>
+                    <li><a href="#value-alignment" class="text-primary hover:underline">Lab 10 · Value Alignment Tool</a></li>
+                    <li><a href="#llm-sandbox" class="text-primary hover:underline">Lab 11 · LLM Ethical Sandbox</a></li>
+                    </ol>
+                    <p class="mt-2">Lab 12, the capstone audit, has no tool of its own: it sends you back through the Bias Auditor, Proxy Detector, Explainability Lab and Adversarial Sandbox.</p>
+                </nav>
             </section>
 
-            <section class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3 flex items-center">
-                    <span class="material-icons-outlined text-purple-500 mr-2" aria-hidden="true">visibility</span> Explainability Lab
-                </h2>
-                <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                    Understand how AI models make decisions. This lab demonstrates interpretability techniques like LIME
-                    (Local Interpretable Model-agnostic Explanations) and SHAP (SHapley Additive exPlanations).
-                </p>
-                <div class="bg-slate-50 dark:bg-surface-dark-lighter p-4 rounded-lg">
-                    <h4 class="font-semibold text-sm mb-2 text-slate-700 dark:text-slate-300">How to use:</h4>
-                    <ul class="list-disc list-inside text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                        <li><strong>Image Classification:</strong> Select an image to see which regions the model
-                            focuses on.</li>
-                        <li><strong>Tabular Data:</strong> Input data points (e.g., loan application) to see which
-                            features contributed most to the decision.</li>
-                    </ul>
-                </div>
+            <section id="word-embeddings" aria-labelledby="word-embeddings-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 1</p>
+                <h2 id="word-embeddings-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/word-embeddings.html" class="hover:underline">Word Embeddings Workbench</a></h2>
+                <p class="tool-question mt-1" data-tool="word-embeddings"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>Real GloVe word vectors (trained on Wikipedia and newswire text), in four sizes you can load and compare.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Pick a model in the <strong>Model</strong> bar. Small (5,000 words, about 1 MB) loads on its own; Large, Full and Max are bigger downloads, and Full and Max ask first.</li>
+                        <li><strong>Vector Arithmetic</strong>: fill Word 1 − Word 2 + Word 3 (or click a preset such as “king − man + woman”) and press <strong>Compute</strong>. If a word is missing, the tool offers to load a larger model and retry.</li>
+                        <li><strong>3D Explorer</strong>: choose a word set to see it projected into three dimensions with PCA.</li>
+                        <li><strong>Bias Detection</strong>: choose a <strong>Gender Axis</strong> and how many professions to show, then press <strong>Run Debiasing Demo</strong> to compare the WEAT score before and after hard debiasing.</li>
+                        <li>With two or more models loaded, <strong>Compare loaded models</strong> puts their answers side by side.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Nearest neighbours and cosine similarity; per-profession bias scores; WEAT effect size <em>d</em>, its permutation <em>p</em>, and cluster purity before and after debiasing.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd>No export. Must be opened from a web server, not as a file.</dd>
+                </dl>
             </section>
-
-            <section class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3 flex items-center">
-                    <span class="material-icons-outlined text-orange-500 mr-2" aria-hidden="true">saved_search</span> Bias Auditor
-                </h2>
-                <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                    Detect and measure bias in datasets. Analyze how different groups are represented and identify
-                    potential disparities in outcomes.
-                </p>
-                <div class="bg-slate-50 dark:bg-surface-dark-lighter p-4 rounded-lg">
-                    <h4 class="font-semibold text-sm mb-2 text-slate-700 dark:text-slate-300">How to use:</h4>
-                    <ul class="list-disc list-inside text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                        <li><strong>Load Data:</strong> Select a sample dataset or upload your own CSV.</li>
-                        <li><strong>Select Attributes:</strong> Choose the protected attribute (e.g., Race, Gender) and
-                            the target variable.</li>
-                        <li><strong>Metrics:</strong> Review fairness metrics like Disparate Impact and Equal
-                            Opportunity.</li>
-                    </ul>
-                </div>
+            <section id="proxy-detector" aria-labelledby="proxy-detector-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 2</p>
+                <h2 id="proxy-detector-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/proxy-detector.html" class="hover:underline">Proxy Variable Detector</a></h2>
+                <p class="tool-question mt-1" data-tool="proxy-detector"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>Simulated lending, insurance and education data (generated in your browser, not measured), or your own CSV.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Pick a scenario — <strong>Lending</strong>, <strong>Insurance</strong>, <strong>Education</strong> — or <strong>Upload CSV</strong>.</li>
+                        <li>Choose the <strong>Protected Attribute</strong>. The analysis re-runs as soon as you change it.</li>
+                        <li>Read the <strong>Features</strong> list: each feature’s association with the protected attribute, with the measure used (Pearson r, point-biserial r, or Cramér’s V).</li>
+                        <li>Check the correlation map, the VIF chart for multicollinearity, and the alerts and recommendations.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Proxy risk per feature (High ≥ 0.7, Medium ≥ 0.4), a correlation heatmap, variance inflation factors.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd><strong>Copy link to this configuration</strong>; <strong>Export report (HTML)</strong>.</dd>
+                </dl>
             </section>
-
-            <section class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3 flex items-center">
-                    <span class="material-icons-outlined text-red-500 mr-2" aria-hidden="true">security</span> Adversarial Sandbox
-                </h2>
-                <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">
-                    Explore how AI models can be fooled. Generate adversarial examples—inputs designed to cause the
-                    model to make a mistake.
-                </p>
-                <div class="bg-slate-50 dark:bg-surface-dark-lighter p-4 rounded-lg">
-                    <h4 class="font-semibold text-sm mb-2 text-slate-700 dark:text-slate-300">How to use:</h4>
-                    <ul class="list-disc list-inside text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                        <li><strong>Select Image:</strong> Choose an image of a digit or object.</li>
-                        <li><strong>Attack:</strong> Apply noise (FGSM attack) to the image.</li>
-                        <li><strong>Observe:</strong> See how the model's prediction changes despite the image looking
-                            mostly the same to humans.</li>
-                    </ul>
-                </div>
+            <section id="bias-auditor" aria-labelledby="bias-auditor-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 3</p>
+                <h2 id="bias-auditor-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/bias-auditor.html" class="hover:underline">Dataset Bias Auditor</a></h2>
+                <p class="tool-question mt-1" data-tool="bias-auditor"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>Three synthetic samples — Credit Risk (500 rows), Hiring Data (400), Recidivism (600) — or your own CSV.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Load a sample or drop in a CSV.</li>
+                        <li>Set <strong>Protected attribute</strong>, <strong>Decision column</strong> and <strong>Favorable value</strong> (required).</li>
+                        <li>For error-rate metrics, also set the <strong>Ground-truth column</strong> and which value means the favorable outcome was deserved. Without it you get selection-rate metrics only.</li>
+                        <li>Press <strong>Run Audit</strong> and read <strong>Findings</strong> first: what fails, what is a trade-off, and what is a note about the data.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Selection rates, a confusion matrix by group, disparate impact, statistical parity, equal opportunity, predictive equality, equalized odds, calibration gap (PPV), Theil index, χ², and an intersectional check.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd><strong>Copy link to this configuration</strong>; <strong>Export Report (HTML)</strong>.</dd>
+                </dl>
+            </section>
+            <section id="filter-bubble" aria-labelledby="filter-bubble-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 4</p>
+                <h2 id="filter-bubble-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/filter-bubble.html" class="hover:underline">Filter Bubble Simulator</a></h2>
+                <p class="tool-question mt-1" data-tool="filter-bubble"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>A fixed pool of 28 articles across 8 topics, and five simulated friends whose interests pull on yours.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Set <strong>Engagement Weight</strong>, <strong>Diversity Factor</strong> and <strong>Homophily</strong>, and pick an <strong>Algorithm Mode</strong>.</li>
+                        <li>Press <strong>Run Step</strong>, or the play button to run up to 100 steps on its own.</li>
+                        <li>Click a card in the feed to engage with its topic, and watch the feed adjust.</li>
+                        <li>Compare against <strong>Chronological (control)</strong>, or press <strong>Break the Bubble</strong>.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Diversity score and echo-chamber level; Shannon entropy, Simpson index and Gini coefficient over time; topic distribution.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd>No export.</dd>
+                </dl>
+            </section>
+            <section id="privacy-lab" aria-labelledby="privacy-lab-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Labs 5–6</p>
+                <h2 id="privacy-lab-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/privacy-lab.html" class="hover:underline">Privacy &amp; Anonymization Lab</a></h2>
+                <p class="tool-question mt-1" data-tool="privacy-lab"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>A built-in 36-patient table and sample text; nothing is uploaded.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li><strong>PII Detection</strong>: edit the text and press <strong>Scan for PII</strong>. Detection is pattern-based, so it misses what its patterns don’t describe — part of the lesson.</li>
+                        <li><strong>Anonymization</strong>: set <strong>k</strong>, <strong>l</strong> and the <strong>Suppression budget</strong>, then press <strong>Anonymize</strong>. The figure at the top shows the same table at each k.</li>
+                        <li><strong>Differential Privacy</strong>: choose a <strong>Query</strong>, set ε per query and how many queries to release, then press <strong>Run</strong>. <strong>Reset budget</strong> starts over.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Detected and redacted PII; the generalisation chosen, information loss, equivalence class sizes and re-identification risk; Laplace and Gaussian noise against the true value, and the privacy budget spent under sequential and advanced composition.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd><strong>Copy link to this configuration</strong>; <strong>Export report (HTML)</strong>.</dd>
+                </dl>
+            </section>
+            <section id="explainability-lab" aria-labelledby="explainability-lab-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Labs 7–8</p>
+                <h2 id="explainability-lab-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/explainability-lab.html" class="hover:underline">Model Explainability Lab</a></h2>
+                <p class="tool-question mt-1" data-tool="explainability-lab"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>Four small models built for teaching: a word-weight sentiment model and three hand-set scoring models (loan, health, recidivism). There are no image models here.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Pick a model: <strong>Sentiment Analysis</strong>, <strong>Loan Approval</strong>, <strong>Health Risk</strong> or <strong>Recidivism (COMPAS)</strong>.</li>
+                        <li>Sentiment: type or pick an example under “Try:” and press <strong>Analyze</strong>. The others: set the sliders and press <strong>Predict</strong>.</li>
+                        <li>Read the explanation. Every model here is additive, so its SHAP values are computed exactly, not estimated. Sentiment also shows LIME, which deletes words at random and fits a simple model to the results — compare the two.</li>
+                        <li>On the recidivism model, read <strong>Same Profile, Different Race</strong>: the model has no race input, yet outcomes can still differ by group.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Predictions with SHAP attributions (a waterfall for loans); for sentiment, LIME word highlights with the surrogate’s weighted R², aspect sentiment and counterfactuals.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd>No export.</dd>
+                </dl>
+            </section>
+            <section id="adversarial-sandbox" aria-labelledby="adversarial-sandbox-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 9</p>
+                <h2 id="adversarial-sandbox-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/adversarial-sandbox.html" class="hover:underline">Adversarial Robustness Sandbox</a></h2>
+                <p class="tool-question mt-1" data-tool="adversarial-sandbox"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>MobileNet V2, a real ImageNet image classifier, running in your browser; eight sample images or your own.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Pick a <strong>Target Image</strong> or upload one.</li>
+                        <li>Choose an <strong>Attack Method</strong>: FGSM (a gradient attack) or random uniform or Gaussian noise.</li>
+                        <li>Set the <strong>Perturbation (ε / 255)</strong> and press <strong>Execute Attack</strong>.</li>
+                        <li>Compare the top three predictions before and after, and look at the amplified noise. Try the same ε with random noise: the gradient is what makes FGSM work.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Top-3 predictions for the original and the attacked image, the noise pattern, and its L₂ and L∞ size.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd>No export. Needs an internet connection the first time, to download the model.</dd>
+                </dl>
+            </section>
+            <section id="value-alignment" aria-labelledby="value-alignment-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 10</p>
+                <h2 id="value-alignment-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/value-alignment.html" class="hover:underline">Value Alignment Tool</a></h2>
+                <p class="tool-question mt-1" data-tool="value-alignment"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>Twelve written dilemmas, from self-driving cars to generative AI and creative work. Each option’s score under five ethical frameworks was assigned by the course authors — it is a prompt for argument, not a measurement.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Pick a dilemma from the row of buttons.</li>
+                        <li>Read the scenario and choose what the AI should do.</li>
+                        <li>Read which framework your choice fits best, where the tension is, and the real-world case where there is one.</li>
+                        <li>Work through several; <strong>Your Value Profile</strong> builds up as you go. Answering again replaces your earlier answer.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>Alignment with Utilitarian, Deontological, Virtue, Care and Justice ethics, and a radar chart of your choices.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd>No export.</dd>
+                </dl>
+            </section>
+            <section id="llm-sandbox" aria-labelledby="llm-sandbox-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 11</p>
+                <h2 id="llm-sandbox-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/llm-sandbox.html" class="hover:underline">LLM Ethical Sandbox</a></h2>
+                <p class="tool-question mt-1" data-tool="llm-sandbox"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>A real 1.2-billion-parameter language model (LiquidAI LFM2.5 Thinking) that runs on your own graphics card.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Press <strong>Load Model</strong>. The first load downloads roughly 1.2 GB; after that it is cached.</li>
+                        <li>Pick an <strong>Example prompt</strong> or write a <strong>System Prompt</strong>, and press <strong>Apply system prompt</strong> (this clears the chat).</li>
+                        <li>Put the string the model must not reveal in <strong>Secret to watch for</strong>.</li>
+                        <li>Chat, and try to get the model to break its rule. The banner says whether the secret appeared in the answer, in the reasoning, or neither.</li>
+                        <li>Use <strong>Show exact prompt</strong> to see everything the model was actually given.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>The model’s reasoning shown apart from its answer; a leak check on each reply; token counts.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd>Copy a message or the whole conversation; download the transcript. Needs WebGPU (current Chrome or Edge).</dd>
+                </dl>
             </section>
         </div>
 
     </main>
 
-    <script src="shared/session.js?v=3.1.0"></script>
-    <script src="shared/toolkit.js?v=3.1.0"></script>
+    <script src="shared/session.js?v=3.2.0"></script>
+    <script src="shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: null });
+        document.querySelectorAll('.tool-question[data-tool]').forEach(el => {
+            const t = Toolkit.TOOLS.find(x => x.id === el.dataset.tool);
+            if (t) el.textContent = t.question;
+        });
         ToolkitSession.maybeOfferConsent();
     </script>
 </body>

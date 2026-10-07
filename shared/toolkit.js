@@ -30,6 +30,8 @@
             category: 'word-spaces',
             file: 'word-embeddings.html',
             lab: 'Lab 1',
+            order: 1,
+            question: 'What does a model learn about people from the words that surround them?',
             description: 'Explore vector arithmetic, measure gender bias with WEAT, and watch debiasing fail to remove it.'
         },
         {
@@ -40,7 +42,9 @@
             color: 'purple',
             category: 'explainability',
             file: 'explainability-lab.html',
-            lab: 'Lab 7',
+            lab: 'Labs 7–8',
+            order: 7,
+            question: 'When a model decides, can we say why — and do two explanations agree?',
             description: 'Compare a sampled LIME surrogate against exact Shapley values on text, lending, health and risk-scoring models.'
         },
         {
@@ -52,6 +56,8 @@
             category: 'fairness',
             file: 'bias-auditor.html',
             lab: 'Lab 3',
+            order: 3,
+            question: 'Who is the model wrong about — and can it be fair to everyone at once?',
             description: 'Compute selection-rate and error-rate fairness metrics from a real confusion matrix, and see why they conflict.'
         },
         {
@@ -63,6 +69,8 @@
             category: 'safety',
             file: 'adversarial-sandbox.html',
             lab: 'Lab 9',
+            order: 9,
+            question: 'How little must an image change before a classifier sees something else?',
             description: 'Run gradient-based FGSM attacks against MobileNet v2 in the browser and find the perturbation budget that breaks it.'
         },
         {
@@ -74,6 +82,8 @@
             category: 'fairness',
             file: 'filter-bubble.html',
             lab: 'Lab 4',
+            order: 4,
+            question: 'How does a feed that learns from your clicks narrow what you see?',
             description: 'Watch an engagement-optimised feed narrow over time, with a chronological control to compare against.'
         },
         {
@@ -85,6 +95,8 @@
             category: 'privacy',
             file: 'privacy-lab.html',
             lab: 'Labs 5–6',
+            order: 5,
+            question: 'How much must a dataset be blurred before no one in it can be found?',
             description: 'Search the k-anonymity generalization lattice and spend a differential privacy budget until it runs out.'
         },
         {
@@ -96,6 +108,8 @@
             category: 'safety',
             file: 'value-alignment.html',
             lab: 'Lab 10',
+            order: 10,
+            question: 'When values conflict, which one does your design choose?',
             description: 'Work through 12 real AI dilemmas and see your choices mapped across five ethical frameworks.'
         },
         {
@@ -107,6 +121,8 @@
             category: 'fairness',
             file: 'proxy-detector.html',
             lab: 'Lab 2',
+            order: 2,
+            question: 'If race is deleted from the data, can a model still see it?',
             description: 'Measure how strongly ordinary features encode protected attributes, using the right statistic for each pair.'
         },
         {
@@ -118,9 +134,15 @@
             category: 'safety',
             file: 'llm-sandbox.html',
             lab: 'Lab 11',
+            order: 11,
+            question: 'Can a written rule stop a language model from doing what it is asked?',
             description: 'Red-team a small language model running entirely in your browser via WebGPU.'
         }
     ];
+
+    // Teaching order: the sidebar and the overview list tools in the order the
+    // course uses them, not in the order they happened to be built.
+    TOOLS.sort((a, b) => a.order - b.order);
 
     const CATEGORIES = {
         'word-spaces': 'Word Spaces',
@@ -130,7 +152,7 @@
         'safety': 'Safety'
     };
 
-    const VERSION = '3.1.0';
+    const VERSION = '3.2.0';
 
     // Pages live either at the repo root or one level down in /tools.
     const inToolsDir = /\/tools\//.test(global.location.pathname);
@@ -149,10 +171,10 @@
         const item = (href, icon, label, isActive, extra = '') => `
             <a href="${href}"
                ${isActive ? 'aria-current="page"' : ''}
-               class="flex items-center px-3 py-2.5 rounded-lg text-sm transition-colors group ${isActive
+               class="flex items-center px-3 py-2 rounded-lg text-sm transition-colors group ${isActive
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark-lighter hover:text-slate-900 dark:hover:text-white'}">
-                <span class="material-icons-outlined mr-3 text-xl ${isActive ? '' : 'group-hover:text-primary transition-colors'}"
+                <span class="material-icons-outlined mr-3 text-lg ${isActive ? '' : 'group-hover:text-primary transition-colors'}"
                       aria-hidden="true">${icon}</span>
                 <span>${esc(label)}</span>${extra}
             </a>`;
@@ -161,10 +183,12 @@
         <div class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity opacity-0" id="mobileOverlay" hidden></div>
         <aside id="sidebar" aria-label="Toolkit navigation"
             class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0">
-            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
+            <div class="h-20 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
                 <a href="${base}index.html" class="flex items-center hover:opacity-80 transition-opacity">
-                    <span class="material-icons-outlined text-primary text-3xl mr-2" aria-hidden="true">psychology</span>
-                    <span class="text-xl font-bold tracking-tight dark:text-white">AI &amp; Data Ethics Toolkit</span>
+                    <svg class="w-7 h-7 mr-2.5 flex-shrink-0 text-primary" viewBox="0 0 32 32" aria-hidden="true">
+                        <path d="M6 24h20M9 24l7-15 7 15M12 18h8" fill="none" stroke="currentColor" stroke-width="1.8"
+                              stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span class="font-serif text-lg leading-tight text-slate-900 dark:text-slate-100">AI &amp; Data Ethics<br>Toolkit</span>
                 </a>
                 <button id="closeSidebar" type="button" aria-label="Close navigation"
                     class="md:hidden text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
@@ -172,14 +196,15 @@
                 </button>
             </div>
             <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1" aria-label="Tools">
-                ${item(base + 'index.html', 'grid_view', 'Toolkit Overview', active === 'overview')}
+                ${item(base + 'index.html', 'grid_view', 'All tools', active === 'overview')}
                 <div class="pt-4 pb-2 px-3">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tools</h2>
+                    <h2 class="eyebrow">Labs, in course order</h2>
                 </div>
-                ${TOOLS.map(t => item(toolHref(t), t.icon, t.short, active === t.id)).join('')}
+                ${TOOLS.map(t => item(toolHref(t), t.icon, t.short, active === t.id,
+                    `<span class="ml-auto pl-2 text-xs tabular-nums text-slate-400">${esc(t.lab.replace(/^Labs? /, ''))}</span>`)).join('')}
             </nav>
             <div class="border-t border-slate-200 dark:border-slate-800 p-4">
-                <p class="text-[10px] text-slate-400 mb-2">© 2026
+                <p class="text-xs text-slate-400 mb-2">© 2026
                     <a href="https://hamedyaghoobian.com" class="text-primary hover:underline"
                        target="_blank" rel="noopener">Hamed Yaghoobian</a></p>
                 <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -242,13 +267,131 @@
     function wireThemeToggle() {
         const toggle = document.getElementById('themeToggle');
         if (!toggle) return;
-        toggle.checked = document.documentElement.classList.contains('dark');
+        // The control was a bare icon; give it a name a screen reader announces.
+        toggle.setAttribute('aria-label', 'Dark theme');
+        toggle.setAttribute('role', 'switch');
+        const sync = () => { toggle.checked = document.documentElement.classList.contains('dark'); };
+        sync();
         toggle.addEventListener('change', () => {
             global.__setToolkitTheme(toggle.checked);
             document.dispatchEvent(new CustomEvent('toolkit:themechange', {
                 detail: { dark: toggle.checked }
             }));
         });
+        // The OS can change the theme too (see the <head> script).
+        document.addEventListener('toolkit:themechange', sync);
+    }
+
+    // ------------------------------------------------------------- charts
+    //
+    // Plotly charts were written with hard-coded hex colours chosen for the
+    // old dark dashboard, decided once at render time, so switching theme left
+    // them in the wrong colours. Every newPlot/react/relayout now passes
+    // through a mapper that resolves each colour to a role (series 1-4,
+    // pass/fail/caution, axis, grid, text) and then to the current theme's
+    // value; on a theme change every live chart is re-mapped in place. The
+    // mapping is idempotent, so a chart drawn before this file loaded is
+    // fixed up too.
+
+    const CHART = {
+        light: { c1: '#2749b8', c2: '#8a3d7e', c3: '#6d5bb0', c4: '#1f7a72', warn: '#9a5a00',
+                 success: '#2e7d4f', danger: '#b3261e', neutral: '#6e6d70', axis: '#5f5f66',
+                 grid: '#e6e1d4', text: '#1b2030', surface: '#fffdf8' },
+        dark:  { c1: '#8ea6f0', c2: '#d08ac4', c3: '#b3a6ee', c4: '#6cc2b3', warn: '#e3b04b',
+                 success: '#7cc79c', danger: '#ef8a7f', neutral: '#8b8a90', axis: '#9a968c',
+                 grid: '#2a2f3c', text: '#e8e4d8', surface: '#151a25' }
+    };
+    const ROLE = {};
+    [['c1', '#137fec #3b82f6 #2563eb #0f6bd1 #4da3f5'],
+     ['c2', '#ec4899 #f472b6'],
+     ['c3', '#8b5cf6 #a855f7 #7c3aed #6366f1'],
+     ['c4', '#06b6d4 #14b8a6 #0891b2'],
+     ['warn', '#f59e0b #ca8a04 #eab308 #f97316 #fde047 #fdba74'],
+     ['success', '#22c55e #15803d #10b981'],
+     ['danger', '#ef4444 #dc2626 #b91c1c #991b1b #fca5a5'],
+     ['neutral', '#64748b'],
+     ['axis', '#475569 #94a3b8'],
+     ['grid', '#e2e8f0 #1e293b #334155 #cbd5e1 #f1f5f9 #0f172a'],
+     ['surface', '#f8fafc #ffffff']
+    ].forEach(([role, list]) => list.split(' ').forEach(h => { ROLE[h] = role; }));
+    Object.values(CHART).forEach(pal => Object.entries(pal).forEach(([role, h]) => { ROLE[h] = role; }));
+
+    const isDark = () => document.documentElement.classList.contains('dark');
+
+    function mapColor(value, key, inFont) {
+        const m = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(value);
+        if (!m) return value;
+        let role = ROLE['#' + m[1].toLowerCase()];
+        if (!role) return value;
+        if (/gridcolor|zerolinecolor|linecolor|bordercolor/i.test(key)) role = 'grid';
+        else if (inFont && (role === 'grid' || role === 'axis')) role = 'text';
+        return CHART[isDark() ? 'dark' : 'light'][role] + (m[2] || '');
+    }
+
+    function mapSpec(node, key = '', inFont = false) {
+        if (typeof node === 'string') return mapColor(node, key, inFont);
+        if (Array.isArray(node)) return node.map(v => mapSpec(v, key, inFont));
+        if (node && typeof node === 'object' && Object.getPrototypeOf(node) === Object.prototype) {
+            const out = {};
+            Object.entries(node).forEach(([k, v]) => {
+                if (k.startsWith('_')) return;
+                out[k] = mapSpec(v, k, inFont || /font$/i.test(k));
+            });
+            return out;
+        }
+        return node;
+    }
+
+    // Fill in the colours a chart left to Plotly's defaults (dark grey text,
+    // pale grid), which are built for a white page and vanish or glare on the
+    // dark one. Colours a page sets itself are kept, mapped by mapSpec above.
+    function themedLayout(layout) {
+        const l = mapSpec(layout || {});
+        const pal = CHART[isDark() ? 'dark' : 'light'];
+        l.font = Object.assign({ color: pal.text }, l.font, { family: '"IBM Plex Sans", system-ui, sans-serif' });
+        const axis = a => Object.assign({ gridcolor: pal.grid, zerolinecolor: pal.grid, linecolor: pal.grid }, a);
+        const axisKeys = new Set(['xaxis', 'yaxis', ...Object.keys(l).filter(k => /^[xy]axis\d*$/.test(k))]);
+        axisKeys.forEach(k => { l[k] = axis(l[k]); });
+        if (l.scene) ['xaxis', 'yaxis', 'zaxis'].forEach(k => { l.scene[k] = axis(l.scene[k]); });
+        if (l.polar) ['radialaxis', 'angularaxis'].forEach(k => { l.polar[k] = axis(l.polar[k]); });
+        return l;
+    }
+
+    function installChartTheme() {
+        const P = global.Plotly;
+        if (!P || P.__toolkitThemed) return;
+        P.__toolkitThemed = true;
+        const wrap = name => {
+            const orig = P[name].bind(P);
+            P[name] = (gd, data, layout, config) => orig(gd, mapSpec(data), themedLayout(layout), config);
+        };
+        wrap('newPlot');
+        wrap('react');
+        const relayout = P.relayout.bind(P);
+        P.relayout = (gd, update, ...rest) =>
+            relayout(gd, typeof update === 'object' ? mapSpec(update) : update, ...rest);
+
+        const retheme = () => document.querySelectorAll('.js-plotly-plot').forEach(gd => {
+            if (gd.data) P.react(gd, gd.data, gd.layout);
+        });
+        document.addEventListener('toolkit:themechange', retheme);
+        retheme();   // charts drawn before this file loaded
+    }
+
+    // The question a tool answers, set under its title. Kept in TOOLS so the
+    // sidebar, the overview and each page say the same thing.
+    function mountQuestion(active) {
+        const tool = TOOLS.find(t => t.id === active);
+        const h1 = document.querySelector('main h1');
+        if (!tool || !h1 || document.querySelector('.tool-question')) return;
+        const eyebrow = document.createElement('p');
+        eyebrow.className = 'eyebrow mb-1';
+        eyebrow.textContent = tool.lab;
+        h1.parentNode.insertBefore(eyebrow, h1);
+        const q = document.createElement('p');
+        q.className = 'tool-question mt-1 mb-1';
+        q.textContent = tool.question;
+        h1.insertAdjacentElement('afterend', q);
     }
 
     function mountShell(options = {}) {
@@ -263,6 +406,8 @@
 
         wireMobileMenu();
         wireThemeToggle();
+        mountQuestion(active);
+        installChartTheme();
 
         if (global.ToolkitSession && active && active !== 'overview') {
             global.ToolkitSession.startTool(active);

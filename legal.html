@@ -1,59 +1,48 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Legal | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
-    <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
-    </style>
+    <link rel="stylesheet" href="shared/tailwind.css?v=3.2.0" />
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="shared/toolkit.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
     class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 md:gap-0">
             <div class="flex items-center w-full md:w-auto justify-between">
                 <div>
@@ -134,8 +123,8 @@
 
     </main>
 
-    <script src="shared/session.js?v=3.1.0"></script>
-    <script src="shared/toolkit.js?v=3.1.0"></script>
+    <script src="shared/session.js?v=3.2.0"></script>
+    <script src="shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: null });
         ToolkitSession.maybeOfferConsent();

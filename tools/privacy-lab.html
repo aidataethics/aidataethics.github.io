@@ -1,32 +1,16 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Privacy & Anonymization Lab | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
 
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
 
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
 
         .redacted {
             background: #ef444433;
@@ -40,32 +24,43 @@
         }
     </style>
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
+    <link rel="stylesheet" href="../shared/line-figure.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
     class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 md:gap-0">
             <div class="flex items-center w-full md:w-auto justify-between">
                 <div>
@@ -111,11 +106,11 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-red-500 mr-2 align-middle" aria-hidden="true">search</span> Input Text
-                    </h3>
+                    </h2>
                     <textarea id="piiInput" rows="8"
-                        class="w-full px-4 py-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 text-sm focus:ring-primary resize-none font-mono">Dear Support,
+                        class="w-full px-4 py-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 text-sm focus:ring-primary resize-none font-mono" aria-label="Text to scan for personal data">Dear Support,
 
 My name is John Smith and I live at 123 Main Street, New York, NY 10001. 
 You can reach me at john.smith@email.com or call me at (555) 123-4567.
@@ -132,10 +127,10 @@ Thanks, John</textarea>
                 </div>
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-orange-500 mr-2 align-middle" aria-hidden="true">warning</span> Detected
                         PII
-                    </h3>
+                    </h2>
                     <div id="piiResults" class="space-y-3 max-h-[350px] overflow-y-auto"></div>
                     <div id="piiSummary" class="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20 hidden">
                         <p id="piiSummaryText" class="text-sm text-red-500 font-medium"></p>
@@ -144,9 +139,9 @@ Thanks, John</textarea>
             </div>
             <div
                 class="mt-4 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                     <span class="material-icons-outlined text-green-500 mr-2 align-middle" aria-hidden="true">shield</span> Redacted Output
-                </h3>
+                </h2>
                 <div id="redactedOutput"
                     class="p-4 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter text-sm font-mono leading-relaxed whitespace-pre-wrap min-h-[100px]">
                 </div>
@@ -155,13 +150,35 @@ Thanks, John</textarea>
 
         <!-- Anonymization Tab -->
         <div id="panel-anon" class="tab-panel hidden">
+            <section aria-labelledby="kanonHeading"
+                class="mb-6 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl px-5 py-5 md:px-8">
+                <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-6 items-start">
+                    <div>
+                        <h2 id="kanonHeading">Hiding in a crowd of k</h2>
+                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                            Each sheet is one patient. Patients whose generalised age and ZIP match are stacked: they
+                            can no longer be told apart, so an attacker who knows your age and ZIP is left guessing
+                            among everyone in your stack. k-anonymity asks that the smallest stack hold at least k.</p>
+                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                            Raising k merges the stacks but blurs the data: watch the information loss climb. Try it on
+                            paper first with the lecture worksheet, then set <strong>k</strong> below and compare.</p>
+                    </div>
+                    <figure class="project-figure" style="max-width:none">
+                        <div id="kanon-figure" class="project-figure__canvas"></div>
+                        <figcaption><span id="kanon-figure-readout" aria-live="polite"></span>
+                            <span class="project-figure__note">The tool's own lattice search on its 36-row table, suppression budget 20%.
+                                Dashed sheets: records suppressed rather than generalised.</span>
+                        </figcaption>
+                    </figure>
+                </div>
+            </section>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">table_chart</span> Sample
                         Dataset
-                    </h3>
+                    </h2>
                     <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
                         <table class="w-full text-sm">
                             <thead class="bg-slate-50 dark:bg-surface-dark-lighter text-slate-600 dark:text-slate-400">
@@ -178,7 +195,7 @@ Thanks, John</textarea>
                     </div>
                     <div class="mt-4 space-y-3">
                         <div class="p-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter">
-                            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                                 <strong class="text-primary">Quasi-identifiers:</strong> Age, ZIP ·
                                 <strong class="text-primary">Sensitive:</strong> Condition<br>
                                 The tool searches the generalization lattice for the least-damaging Age and ZIP
@@ -196,7 +213,7 @@ Thanks, John</textarea>
                                     id="lVal" class="font-bold text-primary">1</span></label>
                             <input type="range" id="lValue" min="1" max="4" value="1" class="w-full accent-primary"
                                 oninput="document.getElementById('lVal').textContent=this.value">
-                            <p class="text-[10px] text-slate-400 mt-1">l = 1 means k-anonymity only. l-diversity is an
+                            <p class="text-xs text-slate-400 mt-1">l = 1 means k-anonymity only. l-diversity is an
                                 extra constraint on top of k-anonymity, not a substitute for it.</p>
                         </div>
                         <div>
@@ -213,10 +230,10 @@ Thanks, John</textarea>
                 </div>
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-green-500 mr-2 align-middle" aria-hidden="true">verified_user</span>
                         Anonymized Result
-                    </h3>
+                    </h2>
                     <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
                         <table class="w-full text-sm">
                             <thead class="bg-slate-50 dark:bg-surface-dark-lighter text-slate-600 dark:text-slate-400">
@@ -241,12 +258,12 @@ Thanks, John</textarea>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-purple-500 mr-2 align-middle" aria-hidden="true">tune</span> Parameters
-                    </h3>
+                    </h2>
                     <div class="space-y-3">
                         <div>
-                            <label class="text-xs text-slate-500 block mb-1">Query</label>
+                            <label for="dpQuery" class="text-xs text-slate-500 block mb-1">Query</label>
                             <select id="dpQuery"
                                 class="w-full px-3 py-1.5 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700">
                                 <option value="average_age">Average Age</option>
@@ -260,7 +277,7 @@ Thanks, John</textarea>
                             <input type="range" id="dpEpsilon" min="1" max="100" value="5"
                                 class="w-full accent-primary"
                                 oninput="document.getElementById('epsilonVal').textContent=(this.value/10).toFixed(1); updateDPCost()">
-                            <p id="epsWarning" class="text-[10px] text-amber-500 mt-1 leading-snug hidden"></p>
+                            <p id="epsWarning" class="text-xs text-amber-500 mt-1 leading-snug hidden"></p>
                         </div>
                         <div>
                             <label for="nQueries" class="text-xs text-slate-500 flex justify-between"><span>Queries to release</span><span
@@ -276,7 +293,7 @@ Thanks, John</textarea>
                                 class="w-full accent-primary"
                                 oninput="document.getElementById('budgetCapVal').textContent=this.value; updateDPCost()">
                         </div>
-                        <div id="dpCost" class="p-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter text-[11px] leading-relaxed text-slate-600 dark:text-slate-400"></div>
+                        <div id="dpCost" class="p-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter text-xs leading-relaxed text-slate-600 dark:text-slate-400"></div>
                         <div class="flex gap-2">
                             <button onclick="runDPExperiment()" id="dpRunBtn"
                                 class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed">
@@ -301,10 +318,10 @@ Thanks, John</textarea>
                 </div>
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-blue-500 mr-2 align-middle" aria-hidden="true">bar_chart</span> Query
                         Results Distribution
-                    </h3>
+                    </h2>
                     <div id="dpChart" class="h-[300px]"></div>
                     <div id="dpStats" class="mt-4 grid grid-cols-2 gap-3"></div>
                 </div>
@@ -418,7 +435,7 @@ Thanks, John</textarea>
             let html = deduped.length === 0
                 ? `<div class="p-3 rounded-lg bg-green-500/10 border border-green-500/20 mb-3">
                     <p class="text-sm font-bold text-green-500">No PII matched</p>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">These are regular
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">These are regular
                     expressions, not a classifier. "Nothing matched" means nothing matched these patterns — it is not
                     evidence the text is free of personal data. Names, locations and free-text disclosures routinely
                     slip through.</p>
@@ -433,7 +450,7 @@ Thanks, John</textarea>
                             `<span class="px-2 py-0.5 text-xs rounded-full ${severityChipClass[s]}">${severityCounts[s]} ${s}</span>`
                         ).join('')}
                     </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                         ${deduped.length} identifier${deduped.length > 1 ? 's' : ''} across ${distinctTypes} type${distinctTypes > 1 ? 's' : ''}.
                         Each additional attribute narrows the set of people who could match, so quantity matters as much
                         as severity — this is the mechanism behind the Sweeney re-identification result.</p>
@@ -457,7 +474,7 @@ Thanks, John</textarea>
             // Summary
             const summaryDiv = document.getElementById('piiSummary');
             summaryDiv.classList.remove('hidden');
-            document.getElementById('piiSummaryText').textContent = `⚠️ Found ${deduped.length} PII items across ${Object.keys(categories).length} categories: ${deduped.filter(f => f.risk === 'Critical').length} Critical, ${deduped.filter(f => f.risk === 'High').length} High, ${deduped.filter(f => f.risk === 'Medium').length} Medium risk.`;
+            document.getElementById('piiSummaryText').textContent = `Found ${deduped.length} PII items across ${Object.keys(categories).length} categories: ${deduped.filter(f => f.risk === 'Critical').length} Critical, ${deduped.filter(f => f.risk === 'High').length} High, ${deduped.filter(f => f.risk === 'Medium').length} Medium risk.`;
 
             // Redacted output
             let redacted = text;
@@ -693,7 +710,7 @@ Thanks, John</textarea>
                             `<span class="px-2 py-0.5 text-xs rounded-full ${sz >= k ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}">${sz}</span>`
                         ).join('')}
                     </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
                         Information loss is Sweeney's precision metric: for every generalized cell, how much of that
                         attribute's range it now spans, averaged over the table. Suppressed records count as total loss.
                         Raise k and watch both the generalization level and the loss climb — that trade-off is the
@@ -830,7 +847,7 @@ Thanks, John</textarea>
                 xaxis: { title: 'Query result', color: isDark ? '#94a3b8' : '#475569', gridcolor: isDark ? '#1e293b' : '#e2e8f0' },
                 yaxis: { title: 'Frequency', color: isDark ? '#94a3b8' : '#475569', gridcolor: isDark ? '#1e293b' : '#e2e8f0' },
                 legend: { font: { color: isDark ? '#94a3b8' : '#475569', size: 10 }, bgcolor: 'transparent' },
-                font: { family: 'Space Grotesk' }
+                font: { family: 'IBM Plex Sans' }
             }, { responsive: true, displayModeBar: false });
 
             const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
@@ -857,7 +874,7 @@ Thanks, John</textarea>
             <div class="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-center">
                 <p class="text-xs text-slate-500 mb-1">Budget spent</p>
                 <p class="text-lg font-bold text-red-500 tabular-nums">ε = ${dpEpsilonSpent.toFixed(1)} / ${cap}</p>
-                <p class="text-[10px] text-slate-400 mt-1">${dpQueriesReleased} releases</p>
+                <p class="text-xs text-slate-400 mt-1">${dpQueriesReleased} releases</p>
             </div>
             <div class="col-span-2 p-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter">
                 <p class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Composition</p>
@@ -865,7 +882,7 @@ Thanks, John</textarea>
                     <div class="flex justify-between"><span class="text-slate-500">Sequential</span><span class="font-bold">ε = ${dpEpsilonSpent.toFixed(1)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-500">Advanced (δ' = ${DP_DELTA})</span><span class="font-bold ${advBeatsSeq ? 'text-green-500' : 'text-amber-500'}">ε ≈ ${adv.toFixed(1)}</span></div>
                 </div>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
                     ${advBeatsSeq
                     ? `Advanced composition is tighter here: over ${dpQueriesReleased} releases its √k growth beats the linear k·ε bound. That saving is bought by accepting an extra δ' failure probability.`
                     : `Advanced composition is <strong>worse</strong> than sequential at these settings — its √(2k·ln(1/δ')) term only pays off once k is large relative to ε. Increase the query count or lower ε and watch it cross over. A tool that silently reported whichever bound looked better would hide exactly this.`}
@@ -873,7 +890,7 @@ Thanks, John</textarea>
             </div>
             <div class="col-span-2 p-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter">
                 <p class="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Query sensitivity</p>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">${note}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${note}</p>
             </div>`;
 
             updateDPCost();
@@ -882,8 +899,8 @@ Thanks, John</textarea>
         renderOriginalData();
         updateDPCost();
     </script>
-    <script src="../shared/session.js?v=3.1.0"></script>
-    <script src="../shared/toolkit.js?v=3.1.0"></script>
+    <script src="../shared/session.js?v=3.2.0"></script>
+    <script src="../shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: 'privacy-lab' });
         ToolkitSession.maybeOfferConsent();
@@ -969,6 +986,8 @@ Thanks, John</textarea>
             return plainifyNode(el, false);
         }
     </script>
+    <script src="../shared/line-figure.js?v=3.2.0"></script>
+    <script src="../shared/figures/kanon-figure.js?v=3.2.0"></script>
 </body>
 
 </html>

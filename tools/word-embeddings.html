@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
@@ -7,28 +7,12 @@
     <title>Word Embeddings Workbench | AI &amp; Data Ethics Toolkit</title>
     <meta name="description"
         content="Explore word embeddings, perform vector arithmetic, and detect gender bias in word vector spaces." />
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
 
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
 
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
 
         .modal-log::-webkit-scrollbar {
             width: 6px;
@@ -55,25 +39,36 @@
         }
     </style>
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
+    <link rel="stylesheet" href="../shared/line-figure.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
@@ -81,7 +76,7 @@
     <a href="#main" class="skip-link">Skip to main content</a>
 
     <!-- Main Content -->
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 md:gap-0">
             <div class="flex items-center w-full md:w-auto justify-between">
                 <div>
@@ -115,8 +110,15 @@
         </header>
 
         <!-- Tab Navigation -->
-        <div id="tierBar"
-            class="mb-4 p-4 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60"></div>
+        <section aria-label="Model size"
+            class="mb-4 p-5 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60
+                   grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-center">
+            <div id="tierBar"></div>
+            <figure class="project-figure" style="max-width:none">
+                <div id="tiers-figure" class="project-figure__canvas"></div>
+                <figcaption><span id="tiers-figure-readout" aria-live="polite"></span></figcaption>
+            </figure>
+        </section>
         <div id="tierCompare"
             class="hidden mb-6 p-4 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60"></div>
 
@@ -140,10 +142,10 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">functions</span>
                         Word Vector Arithmetic
-                    </h3>
+                    </h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Enter words to explore semantic
                         relationships through vector operations. E.g., King − Man + Woman ≈ Queen</p>
 
@@ -151,15 +153,15 @@
                         <div class="flex items-center gap-2">
                             <input id="word1" type="text" value="king"
                                 class="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 text-sm focus:ring-primary focus:border-primary"
-                                placeholder="Word 1" />
+                                placeholder="Word 1" / aria-label="First word">
                             <span class="text-xl font-bold text-slate-400">−</span>
                             <input id="word2" type="text" value="man"
                                 class="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 text-sm focus:ring-primary focus:border-primary"
-                                placeholder="Word 2" />
+                                placeholder="Word 2" / aria-label="Word to subtract">
                             <span class="text-xl font-bold text-slate-400">+</span>
                             <input id="word3" type="text" value="woman"
                                 class="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 text-sm focus:ring-primary focus:border-primary"
-                                placeholder="Word 3" />
+                                placeholder="Word 3" / aria-label="Word to add">
                         </div>
                         <button id="computeBtn" onclick="computeArithmetic()"
                             class="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors flex items-center justify-center">
@@ -168,17 +170,17 @@
                     </div>
 
                     <div id="arithmeticResults" class="mt-6 hidden">
-                        <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Nearest Neighbors</h4>
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Nearest Neighbors</h3>
                         <div id="resultsList" class="space-y-2"></div>
                     </div>
                 </div>
 
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">info</span>
                         How It Works
-                    </h3>
+                    </h2>
                     <div class="space-y-4 text-sm text-slate-600 dark:text-slate-400">
                         <div class="flex items-start">
                             <div
@@ -217,7 +219,7 @@
 
                     <div id="cosineViz"
                         class="mt-6 p-4 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700">
-                        <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Cosine Similarity</h4>
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Cosine Similarity</h3>
                         <div id="cosineChart" class="h-48"></div>
                     </div>
                 </div>
@@ -226,10 +228,10 @@
             <!-- Preset Examples -->
             <div
                 class="mt-6 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                     <span class="material-icons-outlined text-primary mr-1 align-middle text-base" aria-hidden="true">lightbulb</span>
                     Try These Examples
-                </h3>
+                </h2>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="setExample('king','man','woman')"
                         class="px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors">king
@@ -255,12 +257,12 @@
             <div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
                 <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">3D Word Vector Space</h3>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">3D Word Vector Space</h2>
                         <p class="text-sm text-slate-500 dark:text-slate-400">PCA projection of word vectors into 3D
                             space. Hover over points to see words.</p>
                     </div>
                     <div class="flex gap-2">
-                        <select id="wordCategory" onchange="update3DPlot()"
+                        <select id="wordCategory" aria-label="Word set to plot" onchange="update3DPlot()"
                             class="px-3 py-1.5 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 focus:ring-primary focus:border-primary">
                             <option value="royalty">Royalty & Gender</option>
                             <option value="professions">Professions</option>
@@ -279,10 +281,10 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div
                     class="lg:col-span-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                         <span class="material-icons-outlined text-orange-500 mr-2 align-middle" aria-hidden="true">warning</span>
                         Gender Bias in Profession Embeddings
-                    </h3>
+                    </h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Cosine distance between profession words
                         and gender-associated terms. Higher values (toward "he") indicate male bias; lower values
                         (toward "she") indicate female bias.</p>
@@ -294,10 +296,10 @@
                 <div class="space-y-6">
                     <div
                         class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Configuration</h3>
+                        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Configuration</h2>
                         <div class="space-y-3">
                             <div>
-                                <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Gender Axis</label>
+                                <label for="biasAxis" class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Gender Axis</label>
                                 <select id="biasAxis" onchange="renderBiasChart()"
                                     class="w-full px-3 py-1.5 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 focus:ring-primary focus:border-primary">
                                     <option value="he-she">he ↔ she</option>
@@ -306,7 +308,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Professions to
+                                <label for="profCount" class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Professions to
                                     Show</label>
                                 <select id="profCount" onchange="renderBiasChart()"
                                     class="w-full px-3 py-1.5 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 focus:ring-primary focus:border-primary">
@@ -325,7 +327,7 @@
 
                     <div
                         class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Bias Summary</h3>
+                        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Bias Summary</h2>
                         <div id="biasSummary" class="space-y-3">
                             <div class="flex justify-between text-sm">
                                 <span class="text-slate-500 dark:text-slate-400">Most Male-Biased</span>
@@ -349,10 +351,10 @@
                     <!-- WEAT Score Panel -->
                     <div
                         class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
                             <span class="material-icons-outlined text-purple-500 text-base mr-1" aria-hidden="true">science</span>
                             WEAT Score (Caliskan 2017)
-                        </h3>
+                        </h2>
                         <div id="weatResults" class="space-y-2">
                             <p class="text-xs text-slate-400">Click "Run Debiasing Demo" to compute WEAT scores.</p>
                         </div>
@@ -360,10 +362,10 @@
 
                     <div
                         class="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl p-5">
-                        <h4 class="text-sm font-semibold text-orange-400 mb-2 flex items-center">
+                        <h3 class="text-sm font-semibold text-orange-400 mb-2 flex items-center">
                             <span class="material-icons-outlined text-base mr-1" aria-hidden="true">school</span>
                             Learning Point
-                        </h4>
+                        </h3>
                         <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                             The <strong>WEAT</strong> (Word Embedding Association Test) by Caliskan et al. (2017)
                             quantifies bias using an effect size (d) analogous to the IAT.
@@ -393,7 +395,7 @@
                     <div>
                         <h2 class="text-xl font-bold text-white tracking-tight">Loading GloVe Embeddings</h2>
                         <p class="text-xs text-primary/80 font-medium uppercase tracking-wider">Real Pre-trained Vectors
-                            • Two model sizes</p>
+                            • Four model sizes</p>
                     </div>
                 </div>
                 <div id="statusBadge"
@@ -412,19 +414,19 @@
                 <!-- Technical Specs -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div class="rounded-lg bg-[#101922] border border-slate-800 p-3">
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Model</div>
+                        <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">Model</div>
                         <div class="text-sm font-mono text-primary font-medium">GloVe 6B</div>
                     </div>
                     <div class="rounded-lg bg-[#101922] border border-slate-800 p-3">
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Dimension</div>
+                        <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">Dimension</div>
                         <div class="text-sm font-mono text-white">100d</div>
                     </div>
                     <div class="rounded-lg bg-[#101922] border border-slate-800 p-3">
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Vocabulary</div>
+                        <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">Vocabulary</div>
                         <div class="text-sm font-mono text-white">~20,000</div>
                     </div>
                     <div class="rounded-lg bg-[#101922] border border-slate-800 p-3">
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">File Size</div>
+                        <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">File Size</div>
                         <div class="text-sm font-mono text-white">~7.8 MB</div>
                     </div>
                 </div>
@@ -447,7 +449,7 @@
                 <!-- Terminal Log -->
                 <div id="terminalLog"
                     class="modal-log rounded-lg bg-black/40 border border-slate-800 p-3 font-mono text-xs h-32 overflow-y-auto shadow-inner relative">
-                    <div class="absolute top-2 right-3 text-[10px] text-slate-600 uppercase">System Log</div>
+                    <div class="absolute top-2 right-3 text-xs text-slate-600 uppercase">System Log</div>
                     <div id="logContent" class="space-y-1 text-slate-400"></div>
                 </div>
             </div>
@@ -685,7 +687,7 @@
                             Compare loaded models</button>`
                     : ''}
                 </div>
-                <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
                     1 MB to 92 MB — the same algorithm at four scales. The small one answers instantly; the largest
                     holds 80,000 words at 300 dimensions and makes you wait for it. Full and Max share the same
                     dimensionality and differ only in vocabulary, which separates two different failures: a model that
@@ -794,7 +796,7 @@
                     <tbody class="text-slate-600 dark:text-slate-300">
                         ${rows.map(r => `<tr class="border-b border-slate-100 dark:border-slate-800">
                             <td class="py-2 pr-3 font-medium">${TIERS[r.name].label}<br>
-                                <span class="text-[10px] text-slate-400">${r.words.toLocaleString()} words · ${r.dim}d</span></td>
+                                <span class="text-xs text-slate-400">${r.words.toLocaleString()} words · ${r.dim}d</span></td>
                             <td class="py-2 pr-3 tabular-nums">${r.size} MB</td>
                             <td class="py-2 pr-3">${cell(r)}</td>
                             <td class="py-2">${weatCell(r)}</td>
@@ -802,7 +804,7 @@
                     </tbody>
                 </table>
                 </div>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
                     Where a smaller model returns a worse neighbour, or cannot answer at all, that is capacity
                     showing. Where a WEAT row reads <em>incomplete</em>, the test could not run because words the
                     published method requires are missing from that vocabulary — a measurement that silently reports on
@@ -947,7 +949,7 @@
                 plot_bgcolor: 'transparent',
                 xaxis: { color: isDark ? '#94a3b8' : '#475569', tickfont: { size: 10 } },
                 yaxis: { color: isDark ? '#94a3b8' : '#475569', tickfont: { size: 10 }, range: [0, 1] },
-                font: { family: 'Space Grotesk' }
+                font: { family: 'IBM Plex Sans' }
             }, { responsive: true, displayModeBar: false });
         }
 
@@ -1062,7 +1064,7 @@
                     z: indices.map(i => projected[i][2]),
                     text: indices.map(i => allWords[i]),
                     textposition: 'top center',
-                    textfont: { size: 10, color: isDark ? '#e2e8f0' : '#1e293b', family: 'Space Grotesk' },
+                    textfont: { size: 10, color: isDark ? '#e2e8f0' : '#1e293b', family: 'IBM Plex Sans' },
                     marker: { size: 6, color: colors[gi % colors.length], opacity: 0.9 }
                 };
             });
@@ -1077,8 +1079,8 @@
                     zaxis: { showgrid: true, gridcolor: isDark ? '#1e293b' : '#e2e8f0', zerolinecolor: isDark ? '#334155' : '#cbd5e1', color: isDark ? '#64748b' : '#475569' },
                     bgcolor: 'transparent',
                 },
-                legend: { font: { color: isDark ? '#94a3b8' : '#475569', family: 'Space Grotesk' } },
-                font: { family: 'Space Grotesk' }
+                legend: { font: { color: isDark ? '#94a3b8' : '#475569', family: 'IBM Plex Sans' } },
+                font: { family: 'IBM Plex Sans' }
             }, { responsive: true, displayModeBar: false });
         }
 
@@ -1418,11 +1420,11 @@
                 document.getElementById('weatResults').innerHTML = `
                     <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
                         <p class="text-xs font-bold text-amber-500 mb-1">WEAT cannot run on the ${TIERS[activeTier].label} model</p>
-                        <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                             ${totalMissing} of the words Caliskan's published sets require are outside this
                             vocabulary:</p>
-                        <ul class="text-[11px] text-slate-500 dark:text-slate-400 list-disc pl-4 mt-1">${gaps}</ul>
-                        <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-2">
+                        <ul class="text-xs text-slate-500 dark:text-slate-400 list-disc pl-4 mt-1">${gaps}</ul>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mt-2">
                             The test is reported as unavailable rather than run on whatever words happen to be present.
                             Note <em>which</em> words went missing: this is a frequency-ranked vocabulary, so the rarer
                             names drop first, and in this corpus that falls hardest on the female name set. Your
@@ -1495,7 +1497,7 @@
                     worth checking against Gonen &amp; Goldberg (2019) before trusting it.</p>
                 </div>`}
                 ${Object.keys(missing).length ? `
-                <p class="text-[10px] text-amber-400 mt-2 leading-snug">Out of vocabulary and excluded:
+                <p class="text-xs text-amber-400 mt-2 leading-snug">Out of vocabulary and excluded:
                 ${Object.entries(missing).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ')}.
                 Set sizes used: X=${beforeWEAT.n.X}, Y=${beforeWEAT.n.Y}, A=${beforeWEAT.n.A}, B=${beforeWEAT.n.B}.</p>` : ''}
             `;
@@ -1559,7 +1561,7 @@
                     titlefont: { size: 11 }
                 },
                 yaxis: { color: isDark ? '#94a3b8' : '#475569', tickfont: { size: 11 } },
-                font: { family: 'Space Grotesk' }
+                font: { family: 'IBM Plex Sans' }
             }, { responsive: true, displayModeBar: false });
 
             // Update summary
@@ -1577,12 +1579,14 @@
         // ==================== INIT ====================
         loadGloVeEmbeddings();
     </script>
-    <script src="../shared/session.js?v=3.1.0"></script>
-    <script src="../shared/toolkit.js?v=3.1.0"></script>
+    <script src="../shared/session.js?v=3.2.0"></script>
+    <script src="../shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: 'word-embeddings' });
         ToolkitSession.maybeOfferConsent();
     </script>
+    <script src="../shared/line-figure.js?v=3.2.0"></script>
+    <script src="../shared/figures/tiers-figure.js?v=3.2.0"></script>
 </body>
 
 </html>

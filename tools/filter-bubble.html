@@ -1,32 +1,16 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Filter Bubble Simulator | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
 
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
 
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
 
         .feed-card {
             animation: fadeIn 0.3s ease-out;
@@ -45,32 +29,42 @@
         }
     </style>
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
     class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 md:gap-0">
             <div class="flex items-center w-full md:w-auto justify-between">
                 <div>
@@ -103,36 +97,36 @@
             <div class="space-y-4">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
-                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Algorithm Parameters</h3>
+                    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Algorithm Parameters</h2>
                     <div class="space-y-3">
                         <div>
-                            <label class="text-xs text-slate-500 flex justify-between"><span>Engagement
+                            <label for="engagementWeight" class="text-xs text-slate-500 flex justify-between"><span>Engagement
                                     Weight</span><span id="engVal">0.7</span></label>
                             <input type="range" id="engagementWeight" min="0" max="100" value="70"
                                 class="w-full accent-primary"
                                 oninput="document.getElementById('engVal').textContent=(this.value/100).toFixed(1)">
                         </div>
                         <div>
-                            <label class="text-xs text-slate-500 flex justify-between"><span>Diversity
+                            <label for="diversityFactor" class="text-xs text-slate-500 flex justify-between"><span>Diversity
                                     Factor</span><span id="divVal">0.3</span></label>
                             <input type="range" id="diversityFactor" min="0" max="100" value="30"
                                 class="w-full accent-primary"
                                 oninput="document.getElementById('divVal').textContent=(this.value/100).toFixed(1)">
                         </div>
                         <div>
-                            <label class="text-xs text-slate-500 flex justify-between"><span>Homophily</span><span
+                            <label for="homophily" class="text-xs text-slate-500 flex justify-between"><span>Homophily</span><span
                                     id="homVal">0.5</span></label>
                             <input type="range" id="homophily" min="0" max="100" value="50"
                                 class="w-full accent-primary"
                                 oninput="document.getElementById('homVal').textContent=(this.value/100).toFixed(1)">
                         </div>
                         <div>
-                            <label class="text-xs text-slate-500 mb-1 block">Algorithm Mode</label>
+                            <label for="algoMode" class="text-xs text-slate-500 mb-1 block">Algorithm Mode</label>
                             <select id="algoMode"
                                 class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark-lighter text-slate-700 dark:text-slate-300 px-3 py-2">
-                                <option value="engagement">🔥 Engagement-Optimized</option>
-                                <option value="diversity">🌈 Diversity-Aware</option>
-                                <option value="chronological">📅 Chronological</option>
+                                <option value="engagement">Engagement-optimised</option>
+                                <option value="diversity">Diversity-aware</option>
+                                <option value="chronological">Chronological (control)</option>
                             </select>
                         </div>
                     </div>
@@ -140,7 +134,7 @@
 
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
-                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">User Profile</h3>
+                    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">User Profile</h2>
                     <div class="space-y-2" id="userProfile"></div>
                 </div>
 
@@ -149,11 +143,11 @@
                         class="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center">
                         <span class="material-icons-outlined mr-1 text-base" aria-hidden="true">skip_next</span> Run Step
                     </button>
-                    <button onclick="autoRun()" id="autoBtn"
+                    <button onclick="autoRun()" id="autoBtn" aria-label="Run automatically" aria-pressed="false"
                         class="px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center">
                         <span class="material-icons-outlined text-base" aria-hidden="true">play_arrow</span>
                     </button>
-                    <button onclick="resetSimulation()"
+                    <button onclick="resetSimulation()" aria-label="Reset simulation"
                         class="px-3 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-medium rounded-lg transition-colors text-sm flex items-center justify-center">
                         <span class="material-icons-outlined text-base" aria-hidden="true">refresh</span>
                     </button>
@@ -165,8 +159,8 @@
 
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
-                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Step: <span
-                            id="stepNum">0</span></h3>
+                    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Step: <span
+                            id="stepNum">0</span></h2>
                     <div class="space-y-2">
                         <div class="flex justify-between text-sm">
                             <span class="text-slate-500">Diversity Score</span>
@@ -188,10 +182,10 @@
             <div class="lg:col-span-2">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">dynamic_feed</span> Your
                         Feed
-                    </h3>
+                    </h2>
                     <div id="feedContainer" class="space-y-3 max-h-[600px] overflow-y-auto"></div>
                 </div>
             </div>
@@ -200,10 +194,10 @@
             <div class="space-y-4">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
-                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Diversity Metrics Over
-                        Time</h3>
+                    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Diversity Metrics Over
+                        Time</h2>
                     <div id="diversityChart" class="h-[200px]"></div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
                         These measure the <strong>feed</strong> the algorithm served, not your interest profile — a
                         bubble is something the system builds around you. The purple line is your profile's diversity
                         for contrast. Gini moves the opposite way from Shannon and Simpson: higher Gini means more
@@ -213,18 +207,18 @@
                 </div>
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
-                    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Topic Distribution</h3>
+                    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Topic Distribution</h2>
                     <div id="topicChart" class="h-[200px]"></div>
                 </div>
                 <div class="bg-gradient-to-br from-teal-500/10 to-blue-500/10 border border-teal-500/20 rounded-xl p-5">
-                    <h4 class="text-sm font-semibold text-teal-400 mb-2 flex items-center">
+                    <h3 class="text-sm font-semibold text-teal-400 mb-2 flex items-center">
                         <span class="material-icons-outlined text-base mr-1" aria-hidden="true">school</span> Learning Point
-                    </h4>
+                    </h3>
                     <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                         Filter bubbles occur when recommendation algorithms over-optimize for user engagement,
-                        progressively narrowing content diversity. Try the <strong>Engagement-Optimized</strong> mode
+                        progressively narrowing content diversity. Try the <strong>Engagement-optimised</strong> mode
                         with high engagement weight to see a strong echo chamber form. Switch to
-                        <strong>Diversity-Aware</strong> or click <strong>Break the Bubble</strong> to see how
+                        <strong>Diversity-aware</strong> or click <strong>Break the Bubble</strong> to see how
                         algorithmic interventions can restore content diversity. The chart tracks 3 diversity metrics:
                         <strong>Shannon entropy</strong>, <strong>Simpson index</strong>, and
                         <strong>Gini coefficient</strong>.
@@ -382,7 +376,7 @@
                 const sharedBy = homophilyNow < 0.15 ? []
                     : FRIENDS.filter(f => (f.bias[article.topic] || 0) * homophilyNow >= 0.6);
                 const sharedTag = sharedBy.length > 0
-                    ? `<span class="text-xs text-slate-400 ml-2">🔗 ${sharedBy[0].name} shared</span>` : '';
+                    ? `<span class="text-xs text-slate-400 ml-2">shared by ${sharedBy[0].name}</span>` : '';
                 return `<div class="feed-card p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 hover:border-primary/30 transition-all cursor-pointer" onclick="engageArticle('${article.topic}', ${i})" style="animation-delay: ${i * 50}ms">
                 <div class="flex items-start gap-3">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background: ${topic.color}20">
@@ -393,12 +387,12 @@
                             <span class="text-xs font-medium px-2 py-0.5 rounded-full" style="background: ${topic.color}20; color: ${topic.color}">${topic.label}</span>
                             ${sharedTag}
                         </div>
-                        <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-1">${article.title}</h4>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">${article.title}</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400">${article.summary}</p>
                     </div>
-                    <div class="flex flex-col items-center gap-1 text-slate-400">
-                        <button class="hover:text-red-500 transition-colors"><span class="material-icons-outlined text-lg" aria-hidden="true">favorite_border</span></button>
-                        <button class="hover:text-primary transition-colors"><span class="material-icons-outlined text-lg" aria-hidden="true">share</span></button>
+                    <div class="flex flex-col items-center gap-1 text-slate-400" aria-hidden="true">
+                        <span class="material-icons-outlined text-lg">favorite_border</span>
+                        <span class="material-icons-outlined text-lg">share</span>
                     </div>
                 </div>
             </div>`;
@@ -457,21 +451,21 @@
             if (autoRunInterval) {
                 clearInterval(autoRunInterval);
                 autoRunInterval = null;
-                document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">play_arrow</span>';
+                document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">play_arrow</span>'; document.getElementById('autoBtn').setAttribute('aria-pressed', 'false');
                 document.getElementById('autoBtn').className = 'px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center';
             } else {
                 autoRunInterval = setInterval(() => {
-                    if (currentStep >= 100) { clearInterval(autoRunInterval); autoRunInterval = null; document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">play_arrow</span>'; return; }
+                    if (currentStep >= 100) { clearInterval(autoRunInterval); autoRunInterval = null; document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">play_arrow</span>'; document.getElementById('autoBtn').setAttribute('aria-pressed', 'false'); return; }
                     runStep();
                 }, 800);
-                document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">pause</span>';
+                document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">pause</span>'; document.getElementById('autoBtn').setAttribute('aria-pressed', 'true');
                 document.getElementById('autoBtn').className = 'px-3 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors text-sm flex items-center justify-center';
             }
         }
 
         function resetSimulation() {
             if (autoRunInterval) { clearInterval(autoRunInterval); autoRunInterval = null; }
-            document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">play_arrow</span>';
+            document.getElementById('autoBtn').innerHTML = '<span class="material-icons-outlined text-base" aria-hidden="true">play_arrow</span>'; document.getElementById('autoBtn').setAttribute('aria-pressed', 'false');
             initSimulation();
         }
 
@@ -549,7 +543,7 @@
 
         function updateCharts() {
             const isDark = document.documentElement.classList.contains('dark');
-            const layout = { margin: { t: 10, l: 30, r: 10, b: 30 }, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { family: 'Space Grotesk', size: 10 } };
+            const layout = { margin: { t: 10, l: 30, r: 10, b: 30 }, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { family: 'IBM Plex Sans', size: 10 } };
 
             Plotly.newPlot('diversityChart', [
                 { y: diversityHistory, name: 'Feed · Shannon ↓ worse', type: 'scatter', mode: 'lines', line: { color: '#137fec', width: 2 } },
@@ -584,8 +578,8 @@
 
         initSimulation();
     </script>
-    <script src="../shared/session.js?v=3.1.0"></script>
-    <script src="../shared/toolkit.js?v=3.1.0"></script>
+    <script src="../shared/session.js?v=3.2.0"></script>
+    <script src="../shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: 'filter-bubble' });
         ToolkitSession.maybeOfferConsent();

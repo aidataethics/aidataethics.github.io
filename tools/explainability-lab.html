@@ -1,32 +1,16 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Model Explainability Lab | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.2.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
 
-        ::-webkit-scrollbar-track {
-            background: #101922;
-        }
 
-        ::-webkit-scrollbar-thumb {
-            background: #2d3f50;
-            border-radius: 4px;
-        }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
-        }
 
         .word-highlight {
             display: inline-block;
@@ -42,32 +26,42 @@
         }
     </style>
     <script>
-        // Paint the saved theme before first render to avoid a flash of the
-        // wrong theme. Toolkit.mountShell() wires the toggle control later.
+        // Paint the theme before first render. Until the student chooses one,
+        // follow the operating system's light/dark preference (and keep
+        // following it if it changes); an explicit choice from the toggle wins.
         (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('ethicsToolkitTheme'); } catch (e) { }
+            var root = document.documentElement;
+            var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+            function saved() { try { return localStorage.getItem('ethicsToolkitTheme'); } catch (e) { return null; } }
             function apply(dark) {
-                var root = document.documentElement;
                 root.classList.toggle('dark', dark);
                 root.classList.toggle('light', !dark);
             }
-            apply(saved !== 'light');
+            var s = saved();
+            apply(s ? s === 'dark' : !!(mq && mq.matches));
+            if (mq && mq.addEventListener) {
+                mq.addEventListener('change', function (e) {
+                    if (!saved()) {
+                        apply(e.matches);
+                        document.dispatchEvent(new CustomEvent('toolkit:themechange', { detail: { dark: e.matches } }));
+                    }
+                });
+            }
             window.__setToolkitTheme = function (dark) {
                 apply(dark);
                 try { localStorage.setItem('ethicsToolkitTheme', dark ? 'dark' : 'light'); } catch (e) { }
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.1.0" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.2.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f8f5ee'/%3E%3Cpath d='M6 24h20M9 24l7-15 7 15M12 18h8' fill='none' stroke='%232749b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 </head>
 
 <body
     class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex antialiased selection:bg-primary selection:text-white overflow-x-hidden">
     <a href="#main" class="skip-link">Skip to main content</a>
 
-    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 md:gap-0">
             <div class="flex items-center w-full md:w-auto justify-between">
                 <div>
@@ -120,12 +114,12 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">edit_note</span> Input Text
-                    </h3>
+                    </h2>
                     <textarea id="sentimentInput" rows="4"
                         class="w-full px-4 py-3 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 text-sm focus:ring-primary focus:border-primary resize-none"
-                        placeholder="Enter text to analyze sentiment...">The movie was absolutely wonderful and I loved every moment of it, though the ending was a bit disappointing.</textarea>
+                        placeholder="Enter text to analyze sentiment..." aria-label="Review text to analyse">The movie was absolutely wonderful and I loved every moment of it, though the ending was a bit disappointing.</textarea>
                     <button onclick="analyzeSentiment()"
                         class="w-full mt-3 py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors flex items-center justify-center">
                         <span class="material-icons-outlined mr-2" aria-hidden="true">play_arrow</span> Analyze
@@ -146,7 +140,7 @@
                         <p id="predConf" class="text-xs text-slate-500 mt-1 text-center"></p>
                     </div>
                     <div class="mt-4">
-                        <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">LIME — local surrogate</h4>
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">LIME — local surrogate</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">The model is treated as a black box.
                             Words are deleted at random, the model is re-queried on each variant, and a weighted linear
                             model is fitted to those answers. These colours are that surrogate's coefficients: <span
@@ -155,8 +149,8 @@
                         <div id="limeOutput"
                             class="p-4 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 text-sm leading-relaxed min-h-[60px]">
                         </div>
-                        <p id="limeMeta" class="text-[11px] text-slate-400 mt-2 leading-snug"></p>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-snug">
+                        <p id="limeMeta" class="text-xs text-slate-400 mt-2 leading-snug"></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-snug">
                             Compare with the SHAP panel. LIME <em>samples</em>; SHAP here is computed
                             <em>analytically</em> from the model's structure. Where they disagree, that disagreement is
                             information — it usually means the model is not locally linear.</p>
@@ -164,17 +158,17 @@
                 </div>
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-purple-500 mr-2 align-middle" aria-hidden="true">bar_chart</span> SHAP
                         Feature Importance
-                    </h3>
+                    </h2>
                     <div id="shapChart" class="h-[300px]"></div>
                     <!-- Aspect-Based Analysis -->
                     <div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                             <span class="material-icons-outlined text-sm mr-1 align-middle" aria-hidden="true">category</span> Aspect-Based
                             Sentiment
-                        </h4>
+                        </h3>
                         <div id="aspectResults" class="grid grid-cols-2 gap-2"></div>
                     </div>
                 </div>
@@ -182,10 +176,10 @@
             <!-- Counterfactual Explanations -->
             <div
                 class="mt-4 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-3">
                     <span class="material-icons-outlined text-orange-500 mr-2 align-middle" aria-hidden="true">compare_arrows</span>
                     Counterfactual Explanations
-                </h3>
+                </h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">What minimal changes would flip the
                     prediction?</p>
                 <div id="counterfactualResults" class="space-y-2"></div>
@@ -219,32 +213,32 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">tune</span> Applicant
                         Features
-                    </h3>
+                    </h2>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-xs text-slate-500 block mb-1">Income ($)</label><input type="range"
+                        <div><label for="loan-income" class="text-xs text-slate-500 block mb-1">Income ($)</label><input type="range"
                                 id="loan-income" min="20000" max="150000" value="60000" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent='$'+Number(this.value).toLocaleString()"><span
                                 class="text-xs text-slate-500">$60,000</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Credit Score</label><input type="range"
+                        <div><label for="loan-credit" class="text-xs text-slate-500 block mb-1">Credit Score</label><input type="range"
                                 id="loan-credit" min="300" max="850" value="680" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">680</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Debt-to-Income</label><input type="range"
+                        <div><label for="loan-dti" class="text-xs text-slate-500 block mb-1">Debt-to-Income</label><input type="range"
                                 id="loan-dti" min="0" max="100" value="35" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value+'%'"><span
                                 class="text-xs text-slate-500">35%</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Employment (yrs)</label><input
+                        <div><label for="loan-emp" class="text-xs text-slate-500 block mb-1">Employment (yrs)</label><input
                                 type="range" id="loan-emp" min="0" max="30" value="5" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">5</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Loan Amount ($)</label><input type="range"
+                        <div><label for="loan-amount" class="text-xs text-slate-500 block mb-1">Loan Amount ($)</label><input type="range"
                                 id="loan-amount" min="5000" max="500000" value="50000" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent='$'+Number(this.value).toLocaleString()"><span
                                 class="text-xs text-slate-500">$50,000</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Age</label><input type="range"
+                        <div><label for="loan-age" class="text-xs text-slate-500 block mb-1">Age</label><input type="range"
                                 id="loan-age" min="18" max="75" value="35" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">35</span></div>
@@ -259,10 +253,10 @@
                 </div>
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-purple-500 mr-2 align-middle" aria-hidden="true">waterfall_chart</span>
                         SHAP Waterfall
-                    </h3>
+                    </h2>
                     <div id="loanShapChart" class="h-[400px]"></div>
                 </div>
             </div>
@@ -273,33 +267,33 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">tune</span> Patient
                         Features
-                    </h3>
+                    </h2>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-xs text-slate-500 block mb-1">Age</label><input type="range"
+                        <div><label for="health-age" class="text-xs text-slate-500 block mb-1">Age</label><input type="range"
                                 id="health-age" min="18" max="90" value="45" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">45</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">BMI</label><input type="range"
+                        <div><label for="health-bmi" class="text-xs text-slate-500 block mb-1">BMI</label><input type="range"
                                 id="health-bmi" min="15" max="45" value="26" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">26</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Blood Pressure</label><input type="range"
+                        <div><label for="health-bp" class="text-xs text-slate-500 block mb-1">Blood Pressure</label><input type="range"
                                 id="health-bp" min="80" max="200" value="125" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">125</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Cholesterol</label><input type="range"
+                        <div><label for="health-chol" class="text-xs text-slate-500 block mb-1">Cholesterol</label><input type="range"
                                 id="health-chol" min="100" max="350" value="210" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">210</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Exercise (hrs/wk)</label><input
+                        <div><label for="health-exercise" class="text-xs text-slate-500 block mb-1">Exercise (hrs/wk)</label><input
                                 type="range" id="health-exercise" min="0" max="20" value="3"
                                 class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">3</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Smoker</label><select id="health-smoker"
+                        <div><label for="health-smoker" class="text-xs text-slate-500 block mb-1">Smoker</label><select id="health-smoker"
                                 class="w-full px-2 py-1 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700">
                                 <option value="0">No</option>
                                 <option value="1">Yes</option>
@@ -315,10 +309,10 @@
                 </div>
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         <span class="material-icons-outlined text-purple-500 mr-2 align-middle" aria-hidden="true">waterfall_chart</span>
                         SHAP Feature Importance
-                    </h3>
+                    </h2>
                     <div id="healthShapChart" class="h-[400px]"></div>
                 </div>
             </div>
@@ -329,34 +323,34 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                         <span class="material-icons-outlined text-red-500 mr-2 align-middle" aria-hidden="true">gavel</span> Defendant
                         Profile
-                    </h3>
+                    </h2>
                     <p class="text-xs text-slate-500 mb-4">Modelled on ProPublica's 2016 COMPAS analysis. The scoring
                         function below is <strong>race-blind</strong> — race is not one of its inputs, just as it is not
                         an input to COMPAS. Watch the disparity appear anyway.</p>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-xs text-slate-500 block mb-1">Age</label><input type="range"
+                        <div><label for="compas-age" class="text-xs text-slate-500 block mb-1">Age</label><input type="range"
                                 id="compas-age" min="18" max="70" value="30" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">30</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Prior Offenses</label><input type="range"
+                        <div><label for="compas-priors" class="text-xs text-slate-500 block mb-1">Prior Offenses</label><input type="range"
                                 id="compas-priors" min="0" max="20" value="2" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">2</span></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Charge Severity</label><select
+                        <div><label for="compas-charge" class="text-xs text-slate-500 block mb-1">Charge Severity</label><select
                                 id="compas-charge"
                                 class="w-full px-2 py-1 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700">
                                 <option value="0">Misdemeanor</option>
                                 <option value="1" selected>Felony</option>
                             </select></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Gender</label><select id="compas-gender"
+                        <div><label for="compas-gender" class="text-xs text-slate-500 block mb-1">Gender</label><select id="compas-gender"
                                 class="w-full px-2 py-1 text-sm rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700">
                                 <option value="0">Female</option>
                                 <option value="1" selected>Male</option>
                             </select></div>
-                        <div><label class="text-xs text-slate-500 block mb-1">Juvenile Felonies</label><input
+                        <div><label for="compas-juv" class="text-xs text-slate-500 block mb-1">Juvenile Felonies</label><input
                                 type="range" id="compas-juv" min="0" max="5" value="0" class="w-full accent-primary"
                                 oninput="this.nextElementSibling.textContent=this.value"><span
                                 class="text-xs text-slate-500">0</span></div>
@@ -369,7 +363,7 @@
                         class="mt-4 p-4 rounded-lg bg-slate-50 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700 hidden">
                     </div>
                     <div class="mt-3 p-3 rounded-lg bg-slate-100 dark:bg-surface-dark-lighter border border-slate-200 dark:border-slate-700">
-                        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                             <strong class="text-primary">Where is the race selector?</strong> There isn't one, because
                             the model has no race input. The chart below instead scores each group's <em>typical
                             criminal-history profile</em> through the same race-blind function. The gap it produces is
@@ -378,9 +372,9 @@
                     <!-- Bias Alert -->
                     <div id="compasBiasAlert" class="mt-3 hidden">
                         <div class="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-                            <h4 class="text-sm font-bold text-red-500 flex items-center mb-2">
+                            <h3 class="text-sm font-bold text-red-500 flex items-center mb-2">
                                 <span class="material-icons-outlined mr-1 text-base" aria-hidden="true">warning</span> Disparate Impact Without a Race Input
-                            </h4>
+                            </h3>
                             <p id="compasBiasText" class="text-xs text-slate-600 dark:text-slate-400"></p>
                         </div>
                     </div>
@@ -388,27 +382,27 @@
                 <div class="space-y-4">
                     <div
                         class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
                             <span
                                 class="material-icons-outlined text-purple-500 mr-2 align-middle">waterfall_chart</span>
                             SHAP: Why This Score?
-                        </h3>
+                        </h2>
                         <div id="compasShapChart" class="h-[250px]"></div>
                     </div>
                     <div
                         class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-6">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3">
+                        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">
                             <span
                                 class="material-icons-outlined text-orange-500 mr-2 align-middle text-base">compare_arrows</span>
                             Fairness Comparison: Same Profile, Different Race
-                        </h3>
+                        </h2>
                         <div id="compasFairnessChart" class="h-[200px]"></div>
                     </div>
                     <div
                         class="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-xl p-5">
-                        <h4 class="text-sm font-semibold text-red-400 mb-2 flex items-center">
+                        <h3 class="text-sm font-semibold text-red-400 mb-2 flex items-center">
                             <span class="material-icons-outlined text-base mr-1" aria-hidden="true">school</span> Why This Matters
-                        </h4>
+                        </h3>
                         <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                             ProPublica's 2016 investigation found that COMPAS was biased against Black defendants — they
                             were
@@ -444,7 +438,7 @@
             const d = isDarkMode();
             return Object.assign({
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { family: 'Space Grotesk', color: d ? '#94a3b8' : '#475569' },
+                font: { family: 'IBM Plex Sans', color: d ? '#94a3b8' : '#475569' },
                 xaxis: { color: d ? '#94a3b8' : '#475569', gridcolor: d ? '#1e293b' : '#e2e8f0', zeroline: true, zerolinecolor: d ? '#475569' : '#94a3b8' },
                 yaxis: { color: d ? '#94a3b8' : '#475569' },
             }, extra);
@@ -838,7 +832,7 @@
             }
 
             div.innerHTML = counterfactuals.map(cf => {
-                const icon = cf.flipped ? '🔄' : '→';
+                const icon = cf.flipped ? '⇄' : '→';
                 const flipBadge = cf.flipped
                     ? `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500/20 text-orange-500">FLIPS to ${cf.newProb >= 0.5 ? 'Positive' : 'Negative'}</span>`
                     : `<span class="text-xs text-slate-500">stays ${cf.newProb >= 0.5 ? 'Positive' : 'Negative'} (${(cf.newProb * 100).toFixed(0)}%)</span>`;
@@ -1100,8 +1094,8 @@
         // ==================== INIT ====================
         loadSentimentModel().then(() => analyzeSentiment());
     </script>
-    <script src="../shared/session.js?v=3.1.0"></script>
-    <script src="../shared/toolkit.js?v=3.1.0"></script>
+    <script src="../shared/session.js?v=3.2.0"></script>
+    <script src="../shared/toolkit.js?v=3.2.0"></script>
     <script>
         Toolkit.mountShell({ active: 'explainability-lab' });
         ToolkitSession.maybeOfferConsent();

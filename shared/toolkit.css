@@ -1,53 +1,172 @@
-/* Shared chrome styles for every toolkit page.
-   Previously each page carried its own copy of these rules and they drifted:
-   the light-mode scrollbar override existed only on index.html, so every tool
-   page rendered a dark navy scrollbar against a white background. */
+/* Shared styles for every toolkit page: design tokens, type, chrome.
 
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+   Visual system: ink on paper. Pages are written against Tailwind's stock
+   palette, and tailwind.config.js maps every colour utility onto the --c-*
+   tokens below, so changing a token here restyles all thirteen pages. The
+   same tokens feed the hairline figures (--paper, --ink, --ink-soft, --rule),
+   so drawings and pages share one palette: blue ink on warm paper by day,
+   gold ink on night by night.
+
+   Tokens that Tailwind reads are space-separated RGB triples, so opacity
+   modifiers such as bg-primary/10 keep working. */
+
+/* ------------------------------------------------------------------ fonts */
+/* Self-hosted (vendor/fonts), latin subset. Plex Sans and Newsreader are
+   variable fonts: one file covers every weight used. No third-party requests. */
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 400 600; font-display: swap;
+  src: url('../vendor/fonts/IBMPlexSans-var.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('../vendor/fonts/Newsreader-var.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('../vendor/fonts/IBMPlexMono-400.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('../vendor/fonts/IBMPlexMono-500.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Material Icons Outlined'; font-style: normal; font-weight: 400; font-display: block;
+  src: url('../vendor/fonts/MaterialIconsOutlined-400.woff2') format('woff2'); }
+.material-icons-outlined {
+  font-family: 'Material Icons Outlined'; font-weight: normal; font-style: normal; font-size: 24px;
+  line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap;
+  word-wrap: normal; direction: ltr; font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar-track {
-    background: #101922;
+/* ----------------------------------------------------------------- tokens */
+:root {
+    --c-paper: 248 245 238;        /* page ground */
+    --c-surface: 255 253 248;      /* panels */
+    --c-surface-2: 241 237 227;    /* inset wells, table heads */
+    --c-text: 27 32 48;            /* body ink */
+    --c-accent: 39 73 184;         /* the one accent: links, focus, active */
+    --c-accent-strong: 28 55 144;
+    --c-danger: 179 38 30;         /* status only: fail */
+    --c-danger-strong: 140 29 23;
+    --c-success: 46 125 79;        /* status only: pass */
+    --c-success-strong: 31 92 57;
+    --c-warn: 154 90 0;            /* status only: caution */
+    --c-warn-strong: 120 70 0;
+    --n-400: 111 108 102;          /* secondary text, >= 4.5:1 on paper */
+    --n-500: 95 95 102;
+
+    /* hairline-figure kit */
+    --paper: rgb(var(--c-paper));
+    --ink: rgb(var(--c-accent));
+    --ink-soft: #6b7fbe;
+    --rule: rgba(39, 73, 184, 0.16);
+
+    color-scheme: light;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #2d3f50;
-    border-radius: 4px;
+html.dark {
+    --c-paper: 15 19 28;
+    --c-surface: 21 26 37;
+    --c-surface-2: 28 34 48;
+    --c-text: 232 228 216;
+    --c-accent: 216 182 71;
+    --c-accent-strong: 232 204 110;
+    --c-danger: 239 138 127;
+    --c-danger-strong: 245 168 160;
+    --c-success: 124 199 156;
+    --c-success-strong: 160 216 184;
+    --c-warn: 227 176 75;
+    --c-warn-strong: 236 198 120;
+    --n-400: 154 150 140;
+    --n-500: 139 138 144;
+
+    --ink-soft: #9a8a63;
+    --rule: rgba(216, 182, 71, 0.18);
+
+    color-scheme: dark;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #137fec;
+/* ------------------------------------------------------------------- type */
+body {
+    font-feature-settings: 'ss01', 'cv01';
+    line-height: 1.55;
 }
 
-.light ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+h1, h2,
+.font-serif {
+    font-family: Newsreader, Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
 }
 
-.light ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+h1 {
+    font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.4rem);
+    line-height: 1.12;
 }
 
-.light ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+/* Tool pages use h2 for panel titles; keep them modest. */
+main h2 {
+    font-size: 1.2rem;
+    line-height: 1.3;
 }
 
-html {
-    scrollbar-color: #2d3f50 #101922;
+h3 {
+    letter-spacing: -0.005em;
+    text-wrap: balance;
 }
 
-html.light {
-    scrollbar-color: #cbd5e1 #f1f5f9;
+p { text-wrap: pretty; }
+
+.tabular-nums, td, th, .font-mono {
+    font-variant-numeric: tabular-nums;
 }
 
-/* Visible keyboard focus everywhere. Several controls previously had none, so
-   a keyboard user could not tell where they were on the page. */
+/* An eyebrow: small uppercase label that names what follows. */
+.eyebrow {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(var(--n-500));
+}
+
+/* The one-line question each tool answers, set under its title. */
+.tool-question {
+    font-family: Newsreader, Georgia, serif;
+    font-style: italic;
+    font-size: 1.15rem;
+    color: rgb(var(--c-text) / 0.78);
+    max-width: 62ch;
+}
+
+/* ----------------------------------------------------------------- chrome */
+::selection {
+    background: rgb(var(--c-accent) / 0.22);
+    color: inherit;
+}
+
+/* Filled accent buttons: by night the accent is gold, and white text on gold
+   fails contrast, so any element pairing text-white with a filled background
+   takes the paper colour instead. */
+.dark .text-white:is([class*="bg-primary"], [class*="bg-blue-"], [class*="bg-purple-"], [class*="bg-indigo-"],
+    [class*="bg-emerald-"], [class*="bg-teal-"], [class*="bg-cyan-"], [class*="bg-pink-"],
+    [class*="bg-red-"], [class*="bg-green-"], [class*="bg-amber-"], [class*="bg-orange-"]),
+.dark :is([class*="hover:bg-primary"]):hover {
+    color: rgb(var(--c-paper));
+}
+
+/* Panels are separated by hairline rules, not shadows. */
+.border-slate-200 { border-color: rgb(var(--c-text) / 0.12); }
+.dark .dark\:border-slate-700,
+.dark .dark\:border-slate-700\/60,
+.dark .dark\:border-slate-800 { border-color: rgb(var(--c-text) / 0.12); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgb(var(--c-paper)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--c-text) / 0.18); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent) / 0.6); }
+html { scrollbar-color: rgb(var(--c-text) / 0.2) rgb(var(--c-paper)); }
+
+/* Visible keyboard focus everywhere. */
 :focus-visible {
-    outline: 2px solid #137fec;
+    outline: 2px solid rgb(var(--c-accent));
     outline-offset: 2px;
     border-radius: 2px;
 }
+
+input[type="range"] { accent-color: rgb(var(--c-accent)); }
 
 /* Screen-reader-only text, used for table captions and control labels that are
    conveyed visually by an icon. */
@@ -70,8 +189,8 @@ html.light {
     top: 0;
     z-index: 100;
     padding: 0.75rem 1.25rem;
-    background: #137fec;
-    color: #fff;
+    background: rgb(var(--c-accent));
+    color: rgb(var(--c-paper));
     font-weight: 600;
     border-radius: 0 0 0.5rem 0;
 }
