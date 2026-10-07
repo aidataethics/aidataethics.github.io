@@ -184,11 +184,9 @@
         <aside id="sidebar" aria-label="Toolkit navigation"
             class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0">
             <div class="h-20 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
-                <a href="${base}index.html" class="flex items-center hover:opacity-80 transition-opacity">
-                    <svg class="w-7 h-7 mr-2.5 flex-shrink-0 text-primary" viewBox="0 0 32 32" aria-hidden="true">
-                        <path d="M6 24h20M9 24l7-15 7 15M12 18h8" fill="none" stroke="currentColor" stroke-width="1.8"
-                              stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span class="font-serif text-lg leading-tight text-slate-900 dark:text-slate-100">AI &amp; Data Ethics<br>Toolkit</span>
+                <a href="${base}index.html" class="wordmark" aria-label="AI and Data Ethics Toolkit, home">
+                    <span class="wm-line" aria-hidden="true">AI <span class="wm-amp">&amp;</span> Data Ethics</span>
+                    <span class="wm-sub" aria-hidden="true">Toolkit</span>
                 </a>
                 <button id="closeSidebar" type="button" aria-label="Close navigation"
                     class="md:hidden text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">

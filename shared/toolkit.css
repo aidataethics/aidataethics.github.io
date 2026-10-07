@@ -17,6 +17,12 @@
   src: url('../vendor/fonts/IBMPlexSans-var.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 400 700; font-display: swap;
   src: url('../vendor/fonts/Newsreader-var.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 200 800; font-display: swap;
+  src: url('../vendor/fonts/Newsreader-Italic-var.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+/* One glyph only: Libre Caslon Text's italic ampersand, the "Et" form that is
+   the wordmark's signature (Newsreader's italic draws a plain slanted &). */
+@font-face { font-family: 'Toolkit Amp'; font-style: italic; font-weight: 400; font-display: block;
+  src: url('../vendor/fonts/LibreCaslonText-Italic-amp.woff2') format('woff2'); unicode-range: U+0026; }
 @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 400; font-display: swap;
   src: url('../vendor/fonts/IBMPlexMono-400.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
@@ -246,3 +252,20 @@ input[type="range"] { accent-color: rgb(var(--c-accent)); }
         color: #555;
     }
 }
+
+/* ------------------------------------------------------------- wordmark
+   "AI & Data Ethics" in the upright serif with the ampersand as the
+   signature: the italic Et, larger, in the accent ink (blue by day, gold by
+   night, like the figures). "Toolkit" underneath in small tracked caps. The
+   same glyph is the favicon (shared/favicon.svg). */
+.wordmark { display: inline-flex; flex-direction: column; line-height: 1;
+            color: rgb(var(--c-text)); text-decoration: none; }
+.wm-line  { font-family: Newsreader, Georgia, serif; font-weight: 600;
+            font-size: 1.3rem; letter-spacing: -0.015em; white-space: nowrap; }
+.wm-amp   { font-family: 'Toolkit Amp', Newsreader, Georgia, serif;
+            font-style: italic; font-weight: 400; font-size: 1.6em;
+            color: rgb(var(--c-accent));
+            margin: 0 -0.02em; vertical-align: -0.14em; line-height: 0; }
+.wm-sub   { margin-top: 0.4rem; font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 0.66rem; font-weight: 600; letter-spacing: 0.32em;
+            text-transform: uppercase; color: rgb(var(--n-500)); }
