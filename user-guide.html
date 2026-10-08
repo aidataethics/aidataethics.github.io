@@ -201,7 +201,7 @@
                     <dd><ol class="list-decimal pl-5 space-y-1.5">
                         <li>Pick a model: <strong>Sentiment Analysis</strong>, <strong>Loan Approval</strong>, <strong>Health Risk</strong> or <strong>Recidivism (COMPAS)</strong>.</li>
                         <li>Sentiment: type or pick an example under “Try:” and press <strong>Analyze</strong>. The others: set the sliders and press <strong>Predict</strong>.</li>
-                        <li>Read the explanation. Every model here is additive, so its SHAP values are computed exactly, not estimated. Sentiment also shows LIME, which deletes words at random and fits a simple model to the results — compare the two.</li>
+                        <li>Read the explanation. The loan, health and recidivism models are sums of their features, so their SHAP values are computed exactly, not estimated. The sentiment model is almost a sum, but “not”, “very” and “but” change the scores of the words around them, so its bars are exact Shapley values only when none of those rules fire. Sentiment also shows LIME, which deletes words at random and fits a simple model to the results — compare the two.</li>
                         <li>On the recidivism model, read <strong>Same Profile, Different Race</strong>: the model has no race input, yet outcomes can still differ by group.</li>
                     </ol></dd>
                     <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>

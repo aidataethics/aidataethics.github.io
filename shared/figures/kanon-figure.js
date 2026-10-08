@@ -10,7 +10,7 @@
 //
 // Data: computed by running the page's own findMinimalGeneralization(k, l=1,
 // suppression=20%) over its SAMPLE_DATA (36 rows), then counting class sizes.
-// k = 5 and 6 produce the same table, as do k = 8 to 12, so those share a
+// k = 5, 6 and 7 produce the same table, as do k = 8 to 12, so those share a
 // tray. If SAMPLE_DATA, the hierarchies or the search change, re-run and
 // update STAGES.
 (function () {
@@ -23,7 +23,7 @@
         { k: '2', age: '5-year bins', zip: 'ZIP to 4 digits', sizes: [5, 5, 5, 4, 4, 4, 4, 3, 2], suppressed: 0, loss: 14.9 },
         { k: '3', age: '5-year bins', zip: 'ZIP to 4 digits', sizes: [5, 5, 5, 4, 4, 4, 4, 3], suppressed: 2, loss: 19.6 },
         { k: '4', age: '5-year bins', zip: 'ZIP to 4 digits', sizes: [5, 5, 5, 4, 4, 4, 4], suppressed: 5, loss: 26.7 },
-        { k: '5–6', age: '10-year bins', zip: 'ZIP to 4 digits', sizes: [9, 9, 8, 7], suppressed: 3, loss: 27.6 },
+        { k: '5–7', age: '10-year bins', zip: 'ZIP to 4 digits', sizes: [9, 9, 8, 7], suppressed: 3, loss: 27.6 },
         { k: '8–12', age: '20-year bins', zip: 'ZIP to 4 digits', sizes: [17, 16], suppressed: 3, loss: 38.7 },
     ];
 

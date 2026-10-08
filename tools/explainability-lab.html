@@ -649,10 +649,12 @@
                     ${lime.r2 < 0.7 ? '— a low R² means the linear approximation tracks the model poorly here, so treat the explanation with caution' : '— the linear approximation tracks the model closely in this neighbourhood'}`;
             }
 
-            // Model contributions. For an additive scorer, weight x value IS the
-            // exact Shapley value, so this is genuinely SHAP - but it is computed
-            // analytically from the model, not by sampling like LIME above.
-            // Comparing the two panels is the point of the exercise.
+            // Model contributions: each word's score as the model computed it.
+            // Where no rule fires these are exact Shapley values (the scorer is
+            // then a sum). Negation, intensifiers and "but" make words interact:
+            // the model gives "not" 0 and puts the whole flip on the next word,
+            // where a Shapley value would split it between the two. Comparing
+            // this panel with LIME's above is the point of the exercise.
             const allScored = wordScores.filter(w => w.score !== 0 && w.source !== 'bigram_display');
             const uniqueScored = [];
             const seen = new Set();
@@ -669,7 +671,7 @@
                 hovertemplate: '%{y}: %{x:.3f}<extra></extra>'
             }], plotLayout({
                 margin: { t: 10, l: 100, r: 20, b: 40 },
-                xaxis: { title: 'Contribution to score (exact Shapley value for this additive model)', color: isDarkMode() ? '#94a3b8' : '#475569', gridcolor: isDarkMode() ? '#1e293b' : '#e2e8f0', zeroline: true, zerolinecolor: isDarkMode() ? '#475569' : '#94a3b8' },
+                xaxis: { title: 'Contribution as the model scored it (exact Shapley value only when no not / very / but rule fired)', color: isDarkMode() ? '#94a3b8' : '#475569', gridcolor: isDarkMode() ? '#1e293b' : '#e2e8f0', zeroline: true, zerolinecolor: isDarkMode() ? '#475569' : '#94a3b8' },
                 yaxis: { color: isDarkMode() ? '#94a3b8' : '#475569', autorange: 'reversed' },
             }), { responsive: true, displayModeBar: false });
 
