@@ -208,6 +208,7 @@
 .course-map .cm-node.is-lit .cm-num { fill: var(--paper); }
 .course-map .cm-thread { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.35; transition: opacity 0.2s ease; }
 .course-map .cm-threads.is-lit .cm-thread { stroke: var(--ink); opacity: 1; }
+.course-map .cm-node.is-lit .cm-pair { stroke: var(--ink); opacity: 1; }
 .course-map:focus-visible { outline: 2px solid var(--rule); outline-offset: 6px; }
 #course-figure-readout { display: block; font-style: normal; text-align: left; }
 #course-figure-readout strong { display: block; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 600; }

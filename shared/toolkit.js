@@ -152,6 +152,21 @@
             order: 11,
             question: 'Can a written rule stop a language model from doing what it is asked?',
             description: 'Red-team a small language model running entirely in your browser via WebGPU.'
+        },
+        {
+            id: 'multimodal-sandbox',
+            name: 'Multimodal Sandbox',
+            short: 'Multimodal Sandbox',
+            icon: 'record_voice_over',
+            color: 'emerald',
+            category: 'safety',
+            file: 'multimodal-sandbox.html',
+            // The second half of Lab 11: the same red-teaming, through pictures
+            // and voices, plus whose speech the model transcribes well.
+            lab: 'Lab 11',
+            order: 11.5,
+            question: 'Can a picture or a voice give a model orders, and whose voice does it hear correctly?',
+            description: 'Hide instructions in images and speech, measure word error rate across speakers, and make a synthetic voice, with LFM3-Omni in your browser.'
         }
     ];
 
@@ -167,7 +182,7 @@
         'safety': 'Safety'
     };
 
-    const VERSION = '3.4.0';
+    const VERSION = '3.5.0';
 
     // Pages live either at the repo root or one level down in /tools.
     const inToolsDir = /\/tools\//.test(global.location.pathname);

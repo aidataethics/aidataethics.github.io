@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Legal | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="shared/tailwind.css?v=3.4.0" />
+    <link rel="stylesheet" href="shared/tailwind.css?v=3.5.0" />
     <script>
         // Paint the theme before first render. Until the student chooses one,
         // follow the operating system's light/dark preference (and keep
@@ -34,8 +34,8 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="shared/toolkit.css?v=3.4.0" />
-    <link rel="icon" href="shared/favicon.svg?v=3.4.0" type="image/svg+xml">
+    <link rel="stylesheet" href="shared/toolkit.css?v=3.5.0" />
+    <link rel="icon" href="shared/favicon.svg?v=3.5.0" type="image/svg+xml">
 </head>
 
 <body
@@ -117,14 +117,21 @@
                         Third-party libraries used in this project (e.g., Plotly.js, Tailwind CSS) are subject to their
                         own respective licenses.
                     </p>
+                    <p class="mt-2">
+                        The LLM Ethical Sandbox and the Multimodal Sandbox download LiquidAI's LFM models, and
+                        <code>shared/omni-model.js</code> is a modified JavaScript port of generation code from LiquidAI's
+                        <a href="https://github.com/Liquid4All/onnx-export" class="text-primary hover:underline">LiquidONNX</a>.
+                        Both are used under the
+                        <a href="https://huggingface.co/LiquidAI/LFM3-Omni-2B-ONNX/blob/main/LICENSE" class="text-primary hover:underline">LFM Open License v1.0</a>.
+                    </p>
                 </div>
             </section>
         </div>
 
     </main>
 
-    <script src="shared/session.js?v=3.4.0"></script>
-    <script src="shared/toolkit.js?v=3.4.0"></script>
+    <script src="shared/session.js?v=3.5.0"></script>
+    <script src="shared/toolkit.js?v=3.5.0"></script>
     <script>
         Toolkit.mountShell({ active: null });
         ToolkitSession.maybeOfferConsent();

@@ -1,6 +1,6 @@
 # AI & Data Ethics Toolkit
 
-Ten browser-based tools for an undergraduate AI and data ethics course. Everything
+Eleven browser-based tools for an undergraduate AI and data ethics course. Everything
 runs client-side: no server, no accounts, no data leaves the machine.
 
 Built for CSI 205 (AI and Data Ethics) in the Department of
@@ -23,9 +23,9 @@ Then open <http://localhost:8000>. Nothing else is required — the JavaScript
 libraries are vendored in `vendor/` and the stylesheet is pre-built, so the
 toolkit works with no network connection.
 
-The one exception is the **LLM Ethical Sandbox**, which needs WebGPU and
-downloads roughly 1.2 GB of model weights from Hugging Face on first use. Plan
-for that before running it with a full class on shared wifi.
+The exceptions are the two language-model tools. The **LLM Ethical Sandbox**
+needs WebGPU and downloads roughly 1.2 GB of model weights from Hugging Face on
+first use. Plan for that before running it with a full class on shared wifi.
 
 Set a **secret to watch for** and every reply is checked for it, in the answer
 and in the reasoning. A model that keeps a secret out of its answer but writes
@@ -36,6 +36,18 @@ answering, often 500–2000 tokens, so first replies can take a while. The
 reasoning budget slider defaults to no cap, because a cap that fires mid-thought
 aborts generation before any answer is written. If that does happen, the reply
 offers a one-click retry that asks for a direct answer instead.
+
+The **Multimodal Sandbox** needs WebGPU with 16-bit shader support and
+downloads LFM3-Omni-2B in parts: 1.4 GB to start, then 0.2 GB for images, 0.5 GB
+for listening and 0.5 GB for speaking, each the first time it is used (2.6 GB in
+all). The files are kept in the browser's private storage for the site, so later
+visits read them from disk. Have students load it before class. It runs on
+[onnxruntime-web](https://onnxruntime.ai) with a JavaScript port of LiquidAI's
+[LiquidONNX](https://github.com/Liquid4All/onnx-export) generation code
+(`shared/omni-model.js`); the model and that code are under the LFM Open
+License v1.0. Both language-model tools load their runtime libraries
+(transformers.js, onnxruntime-web) from jsdelivr rather than `vendor/`, so they
+need a network connection on first use.
 
 ---
 
@@ -53,6 +65,7 @@ offers a one-click retry that asks for a direct answer instead.
 | Value Alignment Tool | Twelve real AI dilemmas mapped across five ethical frameworks |
 | Proxy Variable Detector | How strongly ordinary features encode protected attributes |
 | LLM Ethical Sandbox | Red-teaming a small language model running locally via WebGPU, with automatic leak detection |
+| Multimodal Sandbox | The same red-teaming through images and speech, word error rate across speakers, and synthetic speech, with LFM3-Omni via WebGPU |
 
 ---
 

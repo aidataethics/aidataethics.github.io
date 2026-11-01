@@ -1,8 +1,9 @@
 // Home page (index.html): the course as a map. Weeks run left to right, the
-// ten tools top to bottom, and each lab is a node where its tool meets the
+// eleven tools top to bottom, and each lab is a node where its tool meets the
 // week it is released. A tool used twice (Privacy, Explainability) has two
-// nodes on its row; Group Project 3 spans weeks 10-12; the Lab 12 capstone in
-// week 14 sends you back to four earlier tools at once.
+// nodes on its row; Group Project 3 spans weeks 10-12; Lab 11 uses two tools
+// (text, then images and voice); the Lab 12 capstone in week 14 sends you back
+// to four earlier tools at once.
 //
 // Picking a lab (pointer, or arrow keys in course order) says what you work
 // out by hand in lecture that week and what the tool then measures at scale,
@@ -51,9 +52,9 @@
         { id: '10', week: 12, tool: 'value-alignment', topic: 'ethical frameworks',
           hand: 'hack a reward function, then score one dilemma two ways',
           scale: 'twelve dilemmas across five frameworks, and your profile' },
-        { id: '11', week: 13, tool: 'llm-sandbox', topic: 'red teaming',
-          hand: 'draw the prompt stack and beat a word blacklist',
-          scale: 'a real language model, a system prompt, and a secret to protect' },
+        { id: '11', week: 13, tool: 'llm-sandbox', also: 'multimodal-sandbox', topic: 'red teaming',
+          hand: 'draw the prompt stack, beat a word blacklist, and score one transcript\'s word error rate',
+          scale: 'a system prompt and a secret to protect, attacked in words, in a picture and out loud' },
         { id: '12', week: 14, tool: 'capstone', topic: 'full pipeline audit',
           hand: 'impact ratios for a hiring audit, and one section of an impact statement',
           scale: 'one system through four tools, ending in an Algorithmic Impact Statement' },
@@ -78,7 +79,7 @@
         return n;
     };
     const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', tabindex: '0',
-        'aria-label': 'Course map: fifteen weeks across, ten tools down. Each lab is a dot where its tool meets the week it starts; '
+        'aria-label': 'Course map: fifteen weeks across, eleven tools down. Each lab is a dot where its tool meets the week it starts; '
             + 'Lab 12 in week 14 reuses four earlier tools.' }, root);
     svg.classList.add('course-map');
 
@@ -119,6 +120,13 @@
                 el('circle', { cx: X(lab.week), cy: Y(r), r: R, class: 'cm-dot' }, g);
             }
             el('text', { x: X(lab.week + ((lab.span || 1) - 1) / 2), y: Y(r) + 4, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = lab.id;
+            if (lab.also) {
+                // the same lab on a second tool's row, joined by a thread
+                const r2 = ROWS.indexOf(lab.also);
+                el('line', { x1: X(lab.week), y1: Y(r) + R, x2: X(lab.week), y2: Y(r2) - R, class: 'cm-thread cm-pair' }, g);
+                el('circle', { cx: X(lab.week), cy: Y(r2), r: R, class: 'cm-dot' }, g);
+                el('text', { x: X(lab.week), y: Y(r2) + 4, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = lab.id;
+            }
         }
         g.addEventListener('pointerenter', () => select(i));
         g.addEventListener('click', () => { select(i); open(i); });
@@ -127,7 +135,7 @@
 
     // ------------------------------------------------------------ readout
     const note = root.parentElement.querySelector('.project-figure__note');
-    const rest = 'Fifteen weeks, ten tools. Pick a lab to see what you work out by hand, and what the tool then measures.';
+    const rest = 'Fifteen weeks, eleven tools. Pick a lab to see what you work out by hand, and what the tool then measures.';
     let current = -1;
 
     function title(lab) {
@@ -140,11 +148,12 @@
         current = i;
         nodes.forEach((g, j) => g.classList.toggle('is-lit', j === i));
         const lab = LABS[i];
-        rowLabels.forEach((t, r) => t.classList.toggle('is-lit', lab && (ROWS[r] === lab.tool ||
+        rowLabels.forEach((t, r) => t.classList.toggle('is-lit', lab && (ROWS[r] === lab.tool || ROWS[r] === lab.also ||
             (lab.tool === 'capstone' && CAPSTONE_USES.includes(ROWS[r])))));
         threads.classList.toggle('is-lit', lab && lab.tool === 'capstone');
         if (!lab) { readout.textContent = rest; return; }
-        const tool = lab.tool === 'capstone' ? 'Lab 12' : byId[lab.tool].name;
+        const tool = lab.tool === 'capstone' ? 'Lab 12'
+            : byId[lab.tool].name + (lab.also ? ' and the ' + byId[lab.also].name : '');
         readout.innerHTML = '';
         const head = document.createElement('strong');
         head.textContent = `${title(lab)} · week ${lab.week}${lab.span ? '–' + (lab.week + lab.span - 1) : ''} · ${lab.topic}`;
@@ -159,6 +168,14 @@
         a.className = 'cm-open';
         a.textContent = lab.tool === 'capstone' ? 'Start with the Bias Auditor →' : `Open ${byId[lab.tool].short} →`;
         readout.append(head, by, at, a);
+        if (lab.also) {
+            const b = document.createElement('a');
+            b.href = 'tools/' + byId[lab.also].file;
+            b.className = 'cm-open';
+            b.style.marginLeft = '1rem';
+            b.textContent = `Open ${byId[lab.also].short} →`;
+            readout.append(b);
+        }
     }
     function open(i) { window.location.href = href(LABS[i]); }
 

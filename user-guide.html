@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>User Guide | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="shared/tailwind.css?v=3.4.0" />
+    <link rel="stylesheet" href="shared/tailwind.css?v=3.5.0" />
     <script>
         // Paint the theme before first render. Until the student chooses one,
         // follow the operating system's light/dark preference (and keep
@@ -34,8 +34,8 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="shared/toolkit.css?v=3.4.0" />
-    <link rel="icon" href="shared/favicon.svg?v=3.4.0" type="image/svg+xml">
+    <link rel="stylesheet" href="shared/toolkit.css?v=3.5.0" />
+    <link rel="icon" href="shared/favicon.svg?v=3.5.0" type="image/svg+xml">
 </head>
 
 <body
@@ -85,6 +85,7 @@
                     <li><a href="#adversarial-sandbox" class="text-primary hover:underline">Lab 9 · Adversarial Robustness Sandbox</a></li>
                     <li><a href="#value-alignment" class="text-primary hover:underline">Lab 10 · Value Alignment Tool</a></li>
                     <li><a href="#llm-sandbox" class="text-primary hover:underline">Lab 11 · LLM Ethical Sandbox</a></li>
+                    <li><a href="#multimodal-sandbox" class="text-primary hover:underline">Lab 11 · Multimodal Sandbox</a></li>
                     </ol>
                     <p class="mt-2">Lab 12, the capstone audit, has no tool of its own: it sends you back through the Bias Auditor, Proxy Detector, Explainability Lab and Adversarial Sandbox.</p>
                 </nav>
@@ -293,12 +294,32 @@
                     <dd>Copy a message or the whole conversation; download the transcript. Needs WebGPU (current Chrome or Edge).</dd>
                 </dl>
             </section>
+            <section id="multimodal-sandbox" aria-labelledby="multimodal-sandbox-h" class="border-t border-slate-900/80 dark:border-slate-300/60 pt-5">
+                <p class="eyebrow mb-1">Lab 11</p>
+                <h2 id="multimodal-sandbox-h" class="text-2xl text-slate-900 dark:text-slate-100"><a href="tools/multimodal-sandbox.html" class="hover:underline">Multimodal Sandbox</a></h2>
+                <p class="tool-question mt-1" data-tool="multimodal-sandbox"></p>
+                <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
+                    <dd>LiquidAI LFM3-Omni-2B, a two-billion-parameter model that reads images and speech and can answer in a voice, on your own graphics card.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
+                    <dd><ol class="list-decimal pl-5 space-y-1.5">
+                        <li>Press <strong>Load model</strong>. The first load downloads 1.4 GB; images add 0.2 GB, listening 0.5 GB and speaking 0.5 GB, each the first time you use it. After that it is kept on your computer.</li>
+                        <li><strong>Hidden instructions:</strong> pick a scenario and a secret, then try to make the model break its rule with an image (your own, or one made with <strong>Make an image from words</strong>) or a recording. Choose whether it replies in text or in speech. <strong>Show exact prompt</strong> shows where the picture and the recording sit in the prompt.</li>
+                        <li><strong>Whose voice is heard?</strong> Pick a sentence, have several people read it (record, or attach audio files), and compare the word error rate of each transcript.</li>
+                        <li><strong>Synthetic voice:</strong> type a text, choose a voice, and generate speech. You can save it, or send it to the chat as a spoken attack.</li>
+                    </ol></dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
+                    <dd>A leak check on each reply; how many prompt tokens each image and recording takes; word error rate with substitutions, deletions and insertions marked.</dd>
+                    <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
+                    <dd>Save generated speech as a WAV file. Recordings and images are not kept after you close the tab. On a shared computer, use <strong>delete the downloaded model</strong> when you finish. Needs WebGPU with 16-bit shader support (current Chrome or Edge).</dd>
+                </dl>
+            </section>
         </div>
 
     </main>
 
-    <script src="shared/session.js?v=3.4.0"></script>
-    <script src="shared/toolkit.js?v=3.4.0"></script>
+    <script src="shared/session.js?v=3.5.0"></script>
+    <script src="shared/toolkit.js?v=3.5.0"></script>
     <script>
         Toolkit.mountShell({ active: null });
         document.querySelectorAll('.tool-question[data-tool]').forEach(el => {
