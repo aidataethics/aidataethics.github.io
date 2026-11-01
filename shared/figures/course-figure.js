@@ -3,7 +3,9 @@
 // week it is released. A tool used twice (Privacy, Explainability) has two
 // nodes on its row; Group Project 3 spans weeks 10-12; Lab 11 uses two tools
 // (text, then images and voice); the Lab 12 capstone in week 14 sends you back
-// to four earlier tools at once.
+// to four earlier tools at once. Group Projects 1 and 2 each use several tools,
+// so they run as bars in a lane under the grid, threaded up to their tools'
+// rows in a week column no lab uses (8 and 15).
 //
 // Picking a lab (pointer, or arrow keys in course order) says what you work
 // out by hand in lecture that week and what the tool then measures at scale,
@@ -12,7 +14,8 @@
 // Data: weeks from tentative_schedule.md (lab release weeks); the by-hand and
 // at-scale lines summarise each week's board activity and lab handout. Tool
 // names, files and questions come from Toolkit.TOOLS, so this figure and the
-// list beside it cannot disagree. If the schedule changes, edit LABS.
+// list beside it cannot disagree. If the schedule changes, edit LABS and
+// PROJECTS (projects/project1_bias_audit.md, project2_student_sandbox.md).
 (function () {
     const root = document.getElementById('course-figure');
     const readout = document.getElementById('course-figure-readout');
@@ -59,6 +62,21 @@
           hand: 'impact ratios for a hiring audit, and one section of an impact statement',
           scale: 'one system through four tools, ending in an Algorithmic Impact Statement' },
     ];
+    // multi-tool group projects: a bar from week to end in the lane under the
+    // grid; `col` is the free week column where its thread meets its tools
+    const PROJECTS = [
+        { id: 'P1', week: 5, end: 9, col: 8, uses: ['bias-auditor', 'proxy-detector', 'explainability-lab'],
+          topic: 'credit underwriting bias audit, in groups',
+          what: 'audit a bank\'s mortgage model on 10,000 applications: fairness metrics, then proxies such as ZIP code, then why individual applicants were denied',
+          ends: 'an audit report and mitigation plan for the bank\'s board, and a 10-minute presentation' },
+        { id: 'P2', week: 10, end: 15, col: 15, uses: ['llm-sandbox', 'filter-bubble', 'bias-auditor', 'proxy-detector'],
+          topic: 'your own audit, in groups',
+          what: 'pick a track: red-team the LLM, study polarisation in the Filter Bubble, or audit a dataset you bring with the Bias Auditor and Proxy Detector',
+          ends: 'a proposal in week 12, then code, documentation and a presentation at the week-15 showcase' },
+    ];
+    // keyboard order follows release: Project 1 after Lab 4, Project 2 after Project 3
+    LABS.splice(LABS.findIndex(l => l.id === '4') + 1, 0, PROJECTS[0]);
+    LABS.splice(LABS.findIndex(l => l.id === 'P3') + 1, 0, PROJECTS[1]);
     const CAPSTONE_USES = ['bias-auditor', 'proxy-detector', 'explainability-lab', 'adversarial-sandbox'];
     const MARKERS = [{ week: 8, text: 'midterm' }, { week: 15, text: 'showcase' }];
 
@@ -68,7 +86,8 @@
     const NS = 'http://www.w3.org/2000/svg';
     const LABEL_W = 156, COL = 27, ROW = 30, TOP = 32, R = 12;
     const W = LABEL_W + 15 * COL + 6;
-    const H = TOP + ROWS.length * ROW + 46;
+    const LANE = TOP + ROWS.length * ROW + 30;          // top of the projects lane, under Lab 12's pill
+    const H = LANE + 20 + 26;
     const X = week => LABEL_W + (week - 0.5) * COL;
     const Y = row => TOP + (row + 0.5) * ROW;
 
@@ -80,7 +99,8 @@
     };
     const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', tabindex: '0',
         'aria-label': 'Course map: fifteen weeks across, eleven tools down. Each lab is a dot where its tool meets the week it starts; '
-            + 'Lab 12 in week 14 reuses four earlier tools.' }, root);
+            + 'Lab 12 in week 14 reuses four earlier tools. Group Project 1 runs weeks 5 to 9 across three tools, '
+            + 'Project 2 weeks 10 to 15 across four.' }, root);
     svg.classList.add('course-map');
 
     // grid: week columns, tool rows
@@ -96,7 +116,7 @@
         return t;
     });
     MARKERS.forEach(m => {
-        el('text', { x: X(m.week), y: TOP + ROWS.length * ROW + 38, 'text-anchor': 'middle', class: 'lf-label cm-marker' }, svg).textContent = m.text;
+        el('text', { x: X(m.week), y: LANE + 38, 'text-anchor': 'middle', class: 'lf-label cm-marker' }, svg).textContent = m.text;
     });
 
     // capstone threads: week 14, back to four tools' rows
@@ -108,7 +128,14 @@
     // nodes
     const nodes = LABS.map((lab, i) => {
         const g = el('g', { class: 'cm-node' }, svg);
-        if (lab.tool === 'capstone') {
+        if (lab.uses) {
+            // a project: thread from its tools' rows down to its bar in the lane
+            const rows = lab.uses.map(id => ROWS.indexOf(id));
+            el('line', { x1: X(lab.col), y1: Y(Math.min(...rows)), x2: X(lab.col), y2: LANE, class: 'cm-thread cm-pair' }, g);
+            rows.forEach(r => el('circle', { cx: X(lab.col), cy: Y(r), r: R - 3, class: 'cm-dot cm-cap' }, g));
+            el('rect', { x: X(lab.week) - R + 2, y: LANE, width: X(lab.end) - X(lab.week) + 2 * R - 4, height: 20, rx: 10, class: 'cm-dot' }, g);
+            el('text', { x: (X(lab.week) + X(lab.end)) / 2, y: LANE + 14, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = lab.id;
+        } else if (lab.tool === 'capstone') {
             capRows.forEach(r => el('circle', { cx: X(14), cy: Y(r), r: R - 3, class: 'cm-dot cm-cap' }, g));
             el('rect', { x: X(14) - R - 1, y: capY - 1, width: 2 * R + 2, height: 20, rx: 10, class: 'cm-dot' }, g);
             el('text', { x: X(14), y: capY + 13.5, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = '12';
@@ -135,13 +162,14 @@
 
     // ------------------------------------------------------------ readout
     const note = root.parentElement.querySelector('.project-figure__note');
-    const rest = 'Fifteen weeks, eleven tools. Pick a lab to see what you work out by hand, and what the tool then measures.';
+    const rest = 'Fifteen weeks, eleven tools. Pick a lab to see what you work out by hand and what the tool then measures, or a project to see its tools.';
     let current = -1;
 
     function title(lab) {
-        return lab.id === 'P3' ? 'Project 3' : `Lab ${lab.id}`;
+        return lab.id[0] === 'P' ? `Project ${lab.id.slice(1)}` : `Lab ${lab.id}`;
     }
     function href(lab) {
+        if (lab.uses) return 'tools/' + byId[lab.uses[0]].file;
         return 'tools/' + (lab.tool === 'capstone' ? byId['bias-auditor'].file : byId[lab.tool].file);
     }
     function select(i) {
@@ -149,14 +177,36 @@
         nodes.forEach((g, j) => g.classList.toggle('is-lit', j === i));
         const lab = LABS[i];
         rowLabels.forEach((t, r) => t.classList.toggle('is-lit', lab && (ROWS[r] === lab.tool || ROWS[r] === lab.also ||
+            (lab.uses && lab.uses.includes(ROWS[r])) ||
             (lab.tool === 'capstone' && CAPSTONE_USES.includes(ROWS[r])))));
         threads.classList.toggle('is-lit', lab && lab.tool === 'capstone');
         if (!lab) { readout.textContent = rest; return; }
+        if (lab.uses) {
+            readout.innerHTML = '';
+            const head = document.createElement('strong');
+            head.textContent = `${title(lab)} · weeks ${lab.week}–${lab.end} · ${lab.topic}`;
+            const what = document.createElement('span');
+            what.className = 'cm-line';
+            what.textContent = `What: ${lab.what}.`;
+            const ends = document.createElement('span');
+            ends.className = 'cm-line';
+            ends.textContent = `Ends in ${lab.ends}.`;
+            readout.append(head, what, ends);
+            lab.uses.forEach((id, k) => {
+                const a = document.createElement('a');
+                a.href = 'tools/' + byId[id].file;
+                a.className = 'cm-open';
+                if (k) a.style.marginLeft = '1rem';
+                a.textContent = `Open ${byId[id].short} →`;
+                readout.append(a);
+            });
+            return;
+        }
         const tool = lab.tool === 'capstone' ? 'Lab 12'
             : byId[lab.tool].name + (lab.also ? ' and the ' + byId[lab.also].name : '');
         readout.innerHTML = '';
         const head = document.createElement('strong');
-        head.textContent = `${title(lab)} · week ${lab.week}${lab.span ? '–' + (lab.week + lab.span - 1) : ''} · ${lab.topic}`;
+        head.textContent = `${title(lab)} · ${lab.span ? "weeks" : "week"} ${lab.week}${lab.span ? '–' + (lab.week + lab.span - 1) : ''} · ${lab.topic}`;
         const by = document.createElement('span');
         by.className = 'cm-line';
         by.textContent = `By hand: ${lab.hand}.`;
@@ -185,6 +235,6 @@
         else if (e.key === 'Enter' && current >= 0) open(current);
         else if (e.key === 'Escape') select(-1);
     });
-    if (note) note.textContent = 'Arrow keys or pointer to pick a lab; Enter or click opens its tool.';
+    if (note) note.textContent = 'Arrow keys or pointer to pick a lab or project; Enter or click opens its tool.';
     select(-1);
 })();
