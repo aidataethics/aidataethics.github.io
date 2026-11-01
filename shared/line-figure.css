@@ -183,11 +183,11 @@
 .is-suppressed .kanon-box { fill: none; stroke-dasharray: 4 3; }
 .is-homogeneous .kanon-box { stroke: rgb(var(--c-danger)); stroke-width: 1.4; }
 .kanon-crowd.is-lit .kanon-box { stroke: var(--ink); stroke-width: 2; fill: var(--rule); }
-.kanon-head { fill: var(--ink); font-weight: 600; }
-.kanon-sub { font-size: 9px; }
+.kanon-head { fill: var(--ink); font-weight: 600; font-size: 13px; }
+.kanon-sub { font-size: 11.5px; }
 .is-homogeneous .kanon-sub { fill: rgb(var(--c-danger)); font-weight: 600; }
 .kanon-token rect { fill: var(--paper); stroke: var(--ink-soft); stroke-width: 0.8; }
-.kanon-token text { font-family: 'IBM Plex Sans', sans-serif; font-size: 9.5px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+.kanon-token text { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 600; fill: var(--ink); pointer-events: none; }
 .kanon-token:hover rect { stroke: var(--ink); stroke-width: 1.6; }
 .is-suppressed .kanon-token rect { stroke-dasharray: 2 2; }
 #kanon-figure svg:focus-visible { outline: 2px solid var(--rule); outline-offset: 4px; }
@@ -196,13 +196,13 @@
    Home page figure: weeks across, tools down, a node per lab. */
 .course-map .cm-grid { stroke: var(--rule); stroke-width: 0.8; }
 .course-map .cm-row { stroke: var(--rule); stroke-width: 0.8; stroke-dasharray: 2 3; }
-.course-map .cm-week { font-size: 9px; }
-.course-map .cm-tool { font-size: 10.5px; transition: fill 0.2s ease; }
+.course-map .cm-week { font-size: 11px; }
+.course-map .cm-tool { font-size: 13px; transition: fill 0.2s ease; }
 .course-map .cm-tool.is-lit { fill: var(--ink); font-weight: 600; }
-.course-map .cm-marker { font-size: 9px; font-style: italic; }
+.course-map .cm-marker { font-size: 11.5px; font-style: italic; }
 .course-map .cm-node { cursor: pointer; }
 .course-map .cm-dot { fill: var(--paper); stroke: var(--ink-soft); stroke-width: 1.2; transition: fill 0.2s ease, stroke 0.2s ease; }
-.course-map .cm-num { font-family: 'IBM Plex Sans', sans-serif; font-size: 9.5px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+.course-map .cm-num { font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px; font-weight: 600; fill: var(--ink); pointer-events: none; }
 .course-map .cm-node:hover .cm-dot { stroke: var(--ink); }
 .course-map .cm-node.is-lit .cm-dot { fill: var(--ink); stroke: var(--ink); }
 .course-map .cm-node.is-lit .cm-num { fill: var(--paper); }

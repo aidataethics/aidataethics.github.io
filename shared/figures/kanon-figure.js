@@ -25,13 +25,16 @@
 
     const SUPPRESSION = 0.20;
     const CODE = { Allergy: 'Al', Asthma: 'As', Cancer: 'Ca', Diabetes: 'Di', Flu: 'Fl', 'Heart Disease': 'HD' };
-    const W = 660;          // viewBox width
-    const TOK = 24;         // token size
-    const GAP = 3;          // between tokens
-    const PAD = 7;          // inside a crowd box
+    // The viewBox width follows the figure's real width on screen, so one
+    // unit is one CSS pixel and the labels below render at their stated size
+    // at any window width; the crowds reflow instead of shrinking.
+    let W = 660;
+    const TOK = 30;         // token size
+    const GAP = 4;          // between tokens
+    const PAD = 8;          // inside a crowd box
     const PER_ROW = 6;      // tokens per row in a crowd
-    const HEAD = 30;        // label space above each box
-    const CROWD_GAP = 12;   // between boxes
+    const HEAD = 36;        // label space above each box
+    const CROWD_GAP = 16;   // between boxes
     const NS = 'http://www.w3.org/2000/svg';
 
     const el = (tag, attrs = {}, parent) => {
@@ -43,7 +46,7 @@
 
     // ---------------------------------------------------------- controls
     root.insertAdjacentHTML('beforebegin', `
-        <div class="kanon-controls flex flex-wrap items-center gap-x-5 gap-y-2 mb-3 text-sm">
+        <div class="kanon-controls text-left flex flex-wrap items-center gap-x-5 gap-y-2 mb-3 text-sm">
             <label class="flex items-center gap-2">
                 <span class="font-semibold">k</span>
                 <input id="kanonK" type="range" min="1" max="12" step="1" value="3" class="w-40 accent-primary"
@@ -52,9 +55,9 @@
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
                 <input id="kanonL" type="checkbox" class="accent-primary">
-                <span>every crowd needs 2 different conditions (l = 2)</span>
+                <span>every crowd needs 2 different conditions (l&nbsp;=&nbsp;2)</span>
             </label>
-            <button id="kanonRun" type="button" class="sm:ml-auto text-primary hover:underline">Run this in the lab below</button>
+            <button id="kanonRun" type="button" class="text-primary hover:underline" style="margin-left:auto">Run this in the lab below</button>
         </div>`);
     const kInput = document.getElementById('kanonK');
     const kOut = document.getElementById('kanonKOut');
@@ -91,6 +94,7 @@
     }
 
     function draw() {
+        W = Math.max(280, Math.round(root.clientWidth || W));
         kOut.textContent = kInput.value;
         const r = compute();
         svg.replaceChildren();
@@ -109,7 +113,7 @@
         crowds.forEach(c => {
             const n = c.members.length;
             const cols = Math.min(n, PER_ROW), rows = Math.ceil(n / PER_ROW);
-            const bw = Math.max(cols * (TOK + GAP) - GAP + 2 * PAD, c.suppressed ? 120 : 52);
+            const bw = Math.max(cols * (TOK + GAP) - GAP + 2 * PAD, c.suppressed ? 120 : 96);
             const bh = rows * (TOK + GAP) - GAP + 2 * PAD;
             if (x + bw > W && x > 0) { x = 0; y += rowH + CROWD_GAP; rowH = 0; }
             c.x = x; c.y = y; c.w = bw; c.h = bh;
@@ -122,9 +126,9 @@
         crowds.forEach((c, i) => {
             const g = el('g', { class: 'kanon-crowd' + (c.homogeneous ? ' is-homogeneous' : '') + (c.suppressed ? ' is-suppressed' : '') }, svg);
             c.g = g;
-            const head = el('text', { x: c.x, y: c.y + 12, class: 'lf-label kanon-head' }, g);
+            const head = el('text', { x: c.x, y: c.y + 14, class: 'lf-label kanon-head' }, g);
             head.textContent = c.suppressed ? 'set aside' : `${c.age} · ${c.zip}`;
-            const sub = el('text', { x: c.x, y: c.y + 24, class: 'lf-label kanon-sub' }, g);
+            const sub = el('text', { x: c.x, y: c.y + 29, class: 'lf-label kanon-sub' }, g);
             sub.textContent = c.suppressed ? `${c.members.length} suppressed`
                 : c.homogeneous ? `all ${c.members[0].row.Condition}` : `${c.members.length} ${c.members.length === 1 ? 'alone' : 'together'}`;
             el('rect', { x: c.x, y: c.y + HEAD, width: c.w, height: c.h, rx: 5, class: 'kanon-box' }, g);
@@ -133,7 +137,7 @@
                 const ty = c.y + HEAD + PAD + Math.floor(j / PER_ROW) * (TOK + GAP);
                 const t = el('g', { class: 'kanon-token' }, g);
                 el('rect', { x: tx, y: ty, width: TOK, height: TOK, rx: 3 }, t);
-                el('text', { x: tx + TOK / 2, y: ty + TOK / 2 + 4, 'text-anchor': 'middle' }, t).textContent = CODE[m.row.Condition] || '?';
+                el('text', { x: tx + TOK / 2, y: ty + TOK / 2 + 4.5, 'text-anchor': 'middle' }, t).textContent = CODE[m.row.Condition] || '?';
                 t.addEventListener('pointerenter', () => { select(i, false); readout.textContent = describePatient(c, m); });
             });
             g.addEventListener('pointerenter', () => select(i, false));
@@ -184,6 +188,12 @@
             select(active < 0 ? 0 : (active + keys[e.key] + crowds.length) % crowds.length);
         } else if (e.key === 'Escape') { select(-1, false); readout.textContent = summary; }
     });
+    // redraw when the width changes (window resize, or the tab first shown)
+    let lastW = 0;
+    new ResizeObserver(() => {
+        const w = Math.round(root.clientWidth);
+        if (w && Math.abs(w - lastW) > 4) { lastW = w; draw(); }
+    }).observe(root);
     kInput.addEventListener('input', draw);
     lInput.addEventListener('change', draw);
     document.getElementById('kanonRun').addEventListener('click', () => {

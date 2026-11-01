@@ -60,7 +60,7 @@
 
     <main id="main" tabindex="-1" class="flex-1 md:ml-64 px-5 md:px-12 py-8 overflow-y-auto h-screen flex flex-col [&>*]:shrink-0">
         <header class="relative mb-10">
-            <div class="max-w-6xl w-full grid lg:grid-cols-2 gap-x-12 gap-y-8 items-center">
+            <div class="max-w-6xl w-full grid lg:grid-cols-[minmax(0,4fr)_minmax(0,5fr)] gap-x-10 gap-y-8 items-center">
               <div class="pr-24 lg:pr-0">
                 <p class="eyebrow mb-2">CSI 205 · AI and Data Ethics</p>
                 <h1 class="text-slate-900 dark:text-slate-100">Measure it by hand, then at scale.</h1>
@@ -70,7 +70,7 @@
                     &mdash; and measures it on real data in your browser. Nothing you load or type here leaves your
                     computer.</p>
               </div>
-              <figure class="project-figure lg:mr-0 mt-2 lg:mt-12">
+              <figure class="project-figure project-figure--wide lg:mr-0 mt-2 lg:mt-12">
                 <div id="course-figure" class="project-figure__canvas" aria-describedby="course-figure-readout"></div>
                 <figcaption><span id="course-figure-readout" aria-live="polite"></span>
                     <span class="project-figure__note">Arrow keys or pointer to pick a lab; Enter or click opens its tool.</span>

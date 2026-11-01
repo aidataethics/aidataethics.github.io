@@ -65,9 +65,9 @@
     const byId = Object.fromEntries(TOOLS.map(t => [t.id, t]));
     const ROWS = TOOLS.map(t => t.id);
     const NS = 'http://www.w3.org/2000/svg';
-    const LABEL_W = 132, COL = 25, ROW = 27, TOP = 30, R = 10.5;
+    const LABEL_W = 156, COL = 27, ROW = 30, TOP = 32, R = 12;
     const W = LABEL_W + 15 * COL + 6;
-    const H = TOP + ROWS.length * ROW + 40;
+    const H = TOP + ROWS.length * ROW + 46;
     const X = week => LABEL_W + (week - 0.5) * COL;
     const Y = row => TOP + (row + 0.5) * ROW;
 
@@ -85,17 +85,17 @@
     // grid: week columns, tool rows
     for (let w = 1; w <= 15; w++) {
         el('line', { x1: X(w), y1: TOP - 4, x2: X(w), y2: TOP + ROWS.length * ROW, class: 'cm-grid' }, svg);
-        el('text', { x: X(w), y: TOP - 12, 'text-anchor': 'middle', class: 'lf-label cm-week' }, svg).textContent = w;
+        el('text', { x: X(w), y: TOP - 13, 'text-anchor': 'middle', class: 'lf-label cm-week' }, svg).textContent = w;
     }
-    el('text', { x: LABEL_W - 8, y: TOP - 12, 'text-anchor': 'end', class: 'lf-label' }, svg).textContent = 'week';
+    el('text', { x: LABEL_W - 8, y: TOP - 13, 'text-anchor': 'end', class: 'lf-label cm-week' }, svg).textContent = 'week';
     const rowLabels = ROWS.map((id, r) => {
         el('line', { x1: LABEL_W, y1: Y(r), x2: X(15) + 6, y2: Y(r), class: 'cm-row' }, svg);
-        const t = el('text', { x: LABEL_W - 8, y: Y(r) + 3.5, 'text-anchor': 'end', class: 'lf-label cm-tool' }, svg);
+        const t = el('text', { x: LABEL_W - 8, y: Y(r) + 4.5, 'text-anchor': 'end', class: 'lf-label cm-tool' }, svg);
         t.textContent = byId[id].short;
         return t;
     });
     MARKERS.forEach(m => {
-        el('text', { x: X(m.week), y: TOP + ROWS.length * ROW + 32, 'text-anchor': 'middle', class: 'lf-label cm-marker' }, svg).textContent = m.text;
+        el('text', { x: X(m.week), y: TOP + ROWS.length * ROW + 38, 'text-anchor': 'middle', class: 'lf-label cm-marker' }, svg).textContent = m.text;
     });
 
     // capstone threads: week 14, back to four tools' rows
@@ -109,8 +109,8 @@
         const g = el('g', { class: 'cm-node' }, svg);
         if (lab.tool === 'capstone') {
             capRows.forEach(r => el('circle', { cx: X(14), cy: Y(r), r: R - 3, class: 'cm-dot cm-cap' }, g));
-            el('rect', { x: X(14) - R - 1, y: capY - 1, width: 2 * R + 2, height: 16, rx: 8, class: 'cm-dot' }, g);
-            el('text', { x: X(14), y: capY + 11, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = '12';
+            el('rect', { x: X(14) - R - 1, y: capY - 1, width: 2 * R + 2, height: 20, rx: 10, class: 'cm-dot' }, g);
+            el('text', { x: X(14), y: capY + 13.5, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = '12';
         } else {
             const r = ROWS.indexOf(lab.tool);
             if (lab.span) {
@@ -118,7 +118,7 @@
             } else {
                 el('circle', { cx: X(lab.week), cy: Y(r), r: R, class: 'cm-dot' }, g);
             }
-            el('text', { x: X(lab.week + ((lab.span || 1) - 1) / 2), y: Y(r) + 3.5, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = lab.id;
+            el('text', { x: X(lab.week + ((lab.span || 1) - 1) / 2), y: Y(r) + 4, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = lab.id;
         }
         g.addEventListener('pointerenter', () => select(i));
         g.addEventListener('click', () => { select(i); open(i); });
