@@ -1,191 +1,173 @@
-// Home page (index.html): the course as a climb. Each of the ten tools is a
-// tray on a rising staircase, in the order the course reaches it; each lab is
-// a card standing on its tool's tray (Privacy and Explainability carry two
-// labs each). The last tray is the Lab 12 capstone, which reuses four earlier
-// tools; when it is picked, dashed threads run back to the trays it draws on.
+// Home page (index.html): the course as a map. Weeks run left to right, the
+// ten tools top to bottom, and each lab is a node where its tool meets the
+// week it is released. A tool used twice (Privacy, Explainability) has two
+// nodes on its row; Group Project 3 spans weeks 10-12; the Lab 12 capstone in
+// week 14 sends you back to four earlier tools at once.
 //
-// Data: lab numbers and titles are the "## Lab N:" headings of the course's
-// lab handouts (ai_ethics_course/labs/lab1..lab12), and Lab 12's four phases
-// are its "Phase 1-4" headings (Bias Auditor, Proxy Detector, Explainability
-// Lab, Adversarial Sandbox). 'P3' is Group Project 3 (ai_ethics_course/projects/
-// project3_behavioral_testing.md), the one project with a tool of its own.
-// Tool names, links and questions come from
-// Toolkit.TOOLS in shared/toolkit.js, so the figure and the list under it
-// cannot disagree. If the lab sequence changes, edit LABS below and the
-// handouts.
+// Picking a lab (pointer, or arrow keys in course order) says what you work
+// out by hand in lecture that week and what the tool then measures at scale,
+// with a link to open it - the two halves of every lab. Enter opens the tool.
+//
+// Data: weeks from tentative_schedule.md (lab release weeks); the by-hand and
+// at-scale lines summarise each week's board activity and lab handout. Tool
+// names, files and questions come from Toolkit.TOOLS, so this figure and the
+// list beside it cannot disagree. If the schedule changes, edit LABS.
 (function () {
     const root = document.getElementById('course-figure');
-    if (!root || !window.LineFigure || !window.Toolkit) return;
-    const { iso, el, svg: makeSvg, box, nearest, interact } = window.LineFigure;
+    const readout = document.getElementById('course-figure-readout');
+    if (!root || !window.Toolkit) return;
 
-    // Lab -> tool, in course order. `lab` is the number on the handout.
     const LABS = [
-        { lab: 1, tool: 'word-embeddings', topic: 'representation bias' },
-        { lab: 2, tool: 'proxy-detector', topic: 'indirect discrimination' },
-        { lab: 3, tool: 'bias-auditor', topic: 'fairness metrics' },
-        { lab: 4, tool: 'filter-bubble', topic: 'feedback loops' },
-        { lab: 5, tool: 'privacy-lab', topic: 'anonymisation' },
-        { lab: 6, tool: 'privacy-lab', topic: 'differential privacy' },
-        { lab: 7, tool: 'explainability-lab', topic: 'tabular explanations' },
-        { lab: 8, tool: 'explainability-lab', topic: 'text explanations' },
-        { lab: 'P3', tool: 'behavioral-testing', topic: 'CheckList tests, in groups' },
-        { lab: 9, tool: 'adversarial-sandbox', topic: 'gradient attacks' },
-        { lab: 10, tool: 'value-alignment', topic: 'ethical frameworks' },
-        { lab: 11, tool: 'llm-sandbox', topic: 'red teaming' },
-        { lab: 12, tool: 'capstone', topic: 'full pipeline audit' },
+        { id: '1', week: 2, tool: 'word-embeddings', topic: 'representation bias',
+          hand: 'a cosine similarity, with a pencil, for one profession and he / she',
+          scale: 'the same lean for thirty professions, on models of four sizes' },
+        { id: '2', week: 3, tool: 'proxy-detector', topic: 'indirect discrimination',
+          hand: 'guess race from one column of twelve loan applications',
+          scale: 'how strongly every feature carries a protected attribute' },
+        { id: '3', week: 4, tool: 'bias-auditor', topic: 'fairness metrics',
+          hand: 'two confusion matrices from twenty cases: precision and false positive rate',
+          scale: 'eight fairness metrics on 600 records, and why they disagree' },
+        { id: '4', week: 5, tool: 'filter-bubble', topic: 'feedback loops',
+          hand: 'one click of profile drift, and the entropy of three feeds',
+          scale: 'a feed narrowing over a hundred steps, against a chronological control' },
+        { id: '5', week: 6, tool: 'privacy-lab', topic: 'anonymisation',
+          hand: 'link two tables to re-identify patients, then make eight rows 2-anonymous',
+          scale: 'k-anonymity and l-diversity across all 36 patients' },
+        { id: '6', week: 7, tool: 'privacy-lab', topic: 'differential privacy',
+          hand: 'Laplace noise for one count, and an epsilon budget split three ways',
+          scale: 'fifty noisy answers, and a budget that runs out' },
+        { id: '7', week: 9, tool: 'explainability-lab', topic: 'tabular explanations',
+          hand: 'Shapley values for a three-feature loan model, every order',
+          scale: 'SHAP waterfalls for loan, health and recidivism decisions' },
+        { id: '8', week: 10, tool: 'explainability-lab', topic: 'text explanations',
+          hand: 'delete words from a review and re-score it yourself',
+          scale: 'LIME against SHAP on a sentiment model, and counterfactuals' },
+        { id: 'P3', week: 10, span: 3, tool: 'behavioral-testing', topic: 'CheckList tests, in groups',
+          hand: 'label eight real test cases and compute a failure rate',
+          scale: 'a whole behavioural test suite, then one your group writes' },
+        { id: '9', week: 11, tool: 'adversarial-sandbox', topic: 'adversarial attacks',
+          hand: 'an FGSM step on a 3 × 3 image',
+          scale: 'the same attack on a real image classifier, MobileNet V2' },
+        { id: '10', week: 12, tool: 'value-alignment', topic: 'ethical frameworks',
+          hand: 'hack a reward function, then score one dilemma two ways',
+          scale: 'twelve dilemmas across five frameworks, and your profile' },
+        { id: '11', week: 13, tool: 'llm-sandbox', topic: 'red teaming',
+          hand: 'draw the prompt stack and beat a word blacklist',
+          scale: 'a real language model, a system prompt, and a secret to protect' },
+        { id: '12', week: 14, tool: 'capstone', topic: 'full pipeline audit',
+          hand: 'impact ratios for a hiring audit, and one section of an impact statement',
+          scale: 'one system through four tools, ending in an Algorithmic Impact Statement' },
     ];
-    // Lab 12's phases, in order: the tools it sends the student back to.
     const CAPSTONE_USES = ['bias-auditor', 'proxy-detector', 'explainability-lab', 'adversarial-sandbox'];
+    const MARKERS = [{ week: 8, text: 'midterm' }, { week: 15, text: 'showcase' }];
 
-    const TOOLS = Object.fromEntries(window.Toolkit.TOOLS.map(t => [t.id, t]));
-    const TRAYS = [];                         // one per tool, in first-use order
-    LABS.forEach(l => { if (!TRAYS.includes(l.tool)) TRAYS.push(l.tool); });
+    const TOOLS = window.Toolkit.TOOLS;                 // in course order
+    const byId = Object.fromEntries(TOOLS.map(t => [t.id, t]));
+    const ROWS = TOOLS.map(t => t.id);
+    const NS = 'http://www.w3.org/2000/svg';
+    const LABEL_W = 132, COL = 25, ROW = 27, TOP = 30, R = 10.5;
+    const W = LABEL_W + 15 * COL + 6;
+    const H = TOP + ROWS.length * ROW + 40;
+    const X = week => LABEL_W + (week - 0.5) * COL;
+    const Y = row => TOP + (row + 0.5) * ROW;
 
-    const TRAY_W = 22;     // tray length along u (world units)
-    const GAP = 5;         // gap between trays along u
-    const DEPTH = 52;      // tray depth along v: deep enough that the climb reads as steps, not a sliver
-    const T = 4;           // tray thickness
-    const RISE = 10;       // each tray sits this much higher than the last: the climb
-    const CARD_H = 36;     // height of a standing lab card
-    const CARD_T = 2;      // card thickness along u
-    const LIFT = 8;        // how far a picked card rises
+    const el = (tag, attrs = {}, parent) => {
+        const n = document.createElementNS(NS, tag);
+        Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+        if (parent) parent.appendChild(n);
+        return n;
+    };
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', tabindex: '0',
+        'aria-label': 'Course map: fifteen weeks across, ten tools down. Each lab is a dot where its tool meets the week it starts; '
+            + 'Lab 12 in week 14 reuses four earlier tools.' }, root);
+    svg.classList.add('course-map');
 
-    const trayU = i => i * (TRAY_W + GAP);
-    const trayH = i => i * RISE;
-
-    // Where each lab's card stands: centred on its tray, or two cards side by
-    // side when a tool carries two labs. The capstone holds four thin sheets.
-    const cards = LABS.map(l => {
-        const ti = TRAYS.indexOf(l.tool);
-        const siblings = LABS.filter(x => x.tool === l.tool);
-        const k = siblings.indexOf(l);
-        const u = trayU(ti) + (siblings.length === 1 ? TRAY_W / 2 : TRAY_W * (k === 0 ? 0.32 : 0.68)) - CARD_T / 2;
-        return { ...l, ti, u, v0: 12, v1: DEPTH - 12, h: trayH(ti) };
-    });
-
-    const L = trayU(TRAYS.length - 1) + TRAY_W;
-    const minY = (0 - L) * 0.5 - trayH(TRAYS.length - 1) - CARD_H - LIFT - 50;
-    const maxY = (DEPTH - 0) * 0.5 + T + 10;
-    const maxX = (L + DEPTH) * 0.866;
-    const svg = makeSvg(root, `-10 ${minY.toFixed(1)} ${(maxX + 20).toFixed(1)} ${(maxY - minY).toFixed(1)}`,
-        'A staircase of ten trays climbing from left to right, one per tool, in the order the course uses them. ' +
-        'Twelve lab cards and one group-project card stand on the trays: Privacy and Explainability carry two labs ' +
-        'each, and the Behavioral Testing tray carries Project 3. The top tray is the ' +
-        'Lab 12 capstone audit, which reuses the Bias Auditor, Proxy Detector, Explainability Lab and Adversarial Sandbox.');
-
-    // Draw farthest first: larger u is farther back.
-    const trayEls = [];
-    const cardEls = [];
-    for (let i = TRAYS.length - 1; i >= 0; i--) {
-        const g = el('g', {}, svg);
-        trayEls[i] = g;
-        box(g, 'lf-solid').set(trayU(i), 0, trayH(i) - T, trayU(i) + TRAY_W, DEPTH, trayH(i));
-
-        cards.filter(c => c.ti === i).forEach(c => {
-            const cg = el('g', {}, svg);
-            if (c.tool === 'capstone') {
-                // four thin sheets, one per phase, fanned slightly
-                const sheets = CAPSTONE_USES.map((_, k) => box(cg, 'lf-solid'));
-                cardEls[cards.indexOf(c)] = { g: cg, sheets, c };
-            } else {
-                cardEls[cards.indexOf(c)] = { g: cg, card: box(cg, 'lf-solid'), c };
-            }
-        });
+    // grid: week columns, tool rows
+    for (let w = 1; w <= 15; w++) {
+        el('line', { x1: X(w), y1: TOP - 4, x2: X(w), y2: TOP + ROWS.length * ROW, class: 'cm-grid' }, svg);
+        el('text', { x: X(w), y: TOP - 12, 'text-anchor': 'middle', class: 'lf-label cm-week' }, svg).textContent = w;
     }
-
-    // Threads from the capstone back to the trays it reuses, drawn last so
-    // they sit on top; hidden until Lab 12 is picked.
-    const threads = el('g', { class: 'lf-ghost', opacity: 0 }, svg);
-    const capTray = TRAYS.indexOf('capstone');
-    const capTop = iso(trayU(capTray) + TRAY_W / 2, DEPTH / 2, trayH(capTray) + 4);
-    const threadEls = CAPSTONE_USES.map(id => {
-        const ti = TRAYS.indexOf(id);
-        const p = iso(trayU(ti) + TRAY_W / 2, DEPTH / 2, trayH(ti) + 2);
-        // a gentle arc above the staircase
-        const mx = (capTop[0] + p[0]) / 2, my = Math.min(capTop[1], p[1]) - 44;
-        return el('path', { class: 'lf-line', d: `M${p[0]},${p[1]} Q${mx},${my} ${capTop[0]},${capTop[1]}` }, threads);
-    });
-
-    // Lab numbers, set flat in screen space and centred under each tray's
-    // front edge, drawn last so no tray line runs through them. (Printed on
-    // the 4-unit tray edge, they were cut by its lines.) The nearer tray, one
-    // step down-left, ends at least 14 units left of each label, so they stay
-    // clear.
-    const NUM_DROP = 15;  // baseline below the front-bottom edge midpoint; the edge slopes, so a label needs ~6 more than its height
-    const numEls = TRAYS.map((id, i) => {
-        const [x, y] = iso(trayU(i) + TRAY_W / 2, DEPTH, trayH(i) - T);
-        const t = el('text', { x, y: y + NUM_DROP, 'text-anchor': 'middle', class: 'lf-text' }, svg);
-        t.textContent = LABS.filter(l => l.tool === id).map(l => l.lab).join('–');
+    el('text', { x: LABEL_W - 8, y: TOP - 12, 'text-anchor': 'end', class: 'lf-label' }, svg).textContent = 'week';
+    const rowLabels = ROWS.map((id, r) => {
+        el('line', { x1: LABEL_W, y1: Y(r), x2: X(15) + 6, y2: Y(r), class: 'cm-row' }, svg);
+        const t = el('text', { x: LABEL_W - 8, y: Y(r) + 3.5, 'text-anchor': 'end', class: 'lf-label cm-tool' }, svg);
+        t.textContent = byId[id].short;
         return t;
     });
+    MARKERS.forEach(m => {
+        el('text', { x: X(m.week), y: TOP + ROWS.length * ROW + 32, 'text-anchor': 'middle', class: 'lf-label cm-marker' }, svg).textContent = m.text;
+    });
 
-    const xs = cards.map(c => iso(c.u + CARD_T / 2, DEPTH / 2, 0)[0]);
+    // capstone threads: week 14, back to four tools' rows
+    const capRows = CAPSTONE_USES.map(id => ROWS.indexOf(id));
+    const threads = el('g', { class: 'cm-threads' }, svg);
+    const capY = TOP + ROWS.length * ROW - 2;
+    capRows.forEach(r => el('line', { x1: X(14), y1: Y(r), x2: X(14), y2: capY, class: 'cm-thread' }, threads));
 
-    const name = c => c.tool === 'capstone' ? 'Capstone audit' : TOOLS[c.tool].name;
-    const go = i => {
-        const c = LABS[i];
-        const target = c.tool === 'capstone' ? 'tools/bias-auditor.html' : 'tools/' + TOOLS[c.tool].file;
-        window.location.href = target;
-    };
-
-    // Fit the viewBox to what was actually drawn (threads included), leaving
-    // headroom for a lifted card, instead of the loose corner estimate above.
-    const fit = () => {
-        const b = svg.getBBox();
-        svg.setAttribute('viewBox', [b.x - 6, b.y - LIFT - 6, b.width + 12, b.height + LIFT + 12].map(v => v.toFixed(1)).join(' '));
-    };
-
-    let current = -1;
-    interact({
-        root, svg, count: LABS.length,
-        onChange: i => { current = i; root.style.cursor = i >= 0 ? 'pointer' : ''; },
-        rest: 'Twelve labs and a group project on ten tools, in course order. Pick one to see its topic.',
-        describe: i => {
-            const c = LABS[i];
-            if (c.tool === 'capstone') {
-                return 'Lab 12 · capstone audit · reuses the Bias Auditor, Proxy Detector, Explainability Lab and Adversarial Sandbox';
+    // nodes
+    const nodes = LABS.map((lab, i) => {
+        const g = el('g', { class: 'cm-node' }, svg);
+        if (lab.tool === 'capstone') {
+            capRows.forEach(r => el('circle', { cx: X(14), cy: Y(r), r: R - 3, class: 'cm-dot cm-cap' }, g));
+            el('rect', { x: X(14) - R - 1, y: capY - 1, width: 2 * R + 2, height: 16, rx: 8, class: 'cm-dot' }, g);
+            el('text', { x: X(14), y: capY + 11, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = '12';
+        } else {
+            const r = ROWS.indexOf(lab.tool);
+            if (lab.span) {
+                el('rect', { x: X(lab.week) - R, y: Y(r) - R, width: (lab.span - 1) * COL + 2 * R, height: 2 * R, rx: R, class: 'cm-dot' }, g);
+            } else {
+                el('circle', { cx: X(lab.week), cy: Y(r), r: R, class: 'cm-dot' }, g);
             }
-            const what = typeof c.lab === 'number' ? `Lab ${c.lab}` : `Project ${c.lab.slice(1)}`;
-            return `${what} · ${TOOLS[c.tool].short} · ${c.topic}`;
-        },
-        pick: x => nearest(x, xs, 28),
-        draw: (glow, active) => {
-            cardEls.forEach((ce, i) => {
-                const { c } = ce;
-                const lift = LIFT * glow[i];
-                if (ce.sheets) {
-                    ce.sheets.forEach((sh, k) => {
-                        const u = c.u - 6 + k * 4.4;
-                        sh.set(u, c.v0 + k * 1.2, c.h + lift * (1 - k * 0.12), u + 1.4, c.v1 + k * 1.2, c.h + CARD_H * 0.8 + lift * (1 - k * 0.12));
-                    });
-                } else {
-                    ce.card.set(c.u, c.v0, c.h + lift, c.u + CARD_T, c.v1, c.h + CARD_H + lift);
-                }
-                ce.g.classList.toggle('is-lit', i === active);
-            });
-            const activeTray = active >= 0 ? cards[active].ti : -1;
-            trayEls.forEach((g, ti) => {
-                const lit = ti === activeTray ||
-                    (active >= 0 && LABS[active].tool === 'capstone' && CAPSTONE_USES.includes(TRAYS[ti]));
-                g.classList.toggle('is-lit', lit);
-                numEls[ti].classList.toggle('is-lit', lit);
-            });
-            const capIdx = LABS.findIndex(l => l.tool === 'capstone');
-            threads.setAttribute('opacity', (glow[capIdx] || 0).toFixed(2));
-            threads.classList.toggle('is-lit', active === capIdx);
+            el('text', { x: X(lab.week + ((lab.span || 1) - 1) / 2), y: Y(r) + 3.5, 'text-anchor': 'middle', class: 'cm-num' }, g).textContent = lab.id;
         }
+        g.addEventListener('pointerenter', () => select(i));
+        g.addEventListener('click', () => { select(i); open(i); });
+        return g;
     });
 
-    // Opening a tool from the figure: Enter on the keyboard, or a mouse click
-    // on the lit card. Touch picks on the first tap and does not navigate, so
-    // a finger can explore; the list under the figure carries the links.
-    fit();
+    // ------------------------------------------------------------ readout
+    const note = root.parentElement.querySelector('.project-figure__note');
+    const rest = 'Fifteen weeks, ten tools. Pick a lab to see what you work out by hand, and what the tool then measures.';
+    let current = -1;
 
-    root.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && current >= 0) go(current);
+    function title(lab) {
+        return lab.id === 'P3' ? 'Project 3' : `Lab ${lab.id}`;
+    }
+    function href(lab) {
+        return 'tools/' + (lab.tool === 'capstone' ? byId['bias-auditor'].file : byId[lab.tool].file);
+    }
+    function select(i) {
+        current = i;
+        nodes.forEach((g, j) => g.classList.toggle('is-lit', j === i));
+        const lab = LABS[i];
+        rowLabels.forEach((t, r) => t.classList.toggle('is-lit', lab && (ROWS[r] === lab.tool ||
+            (lab.tool === 'capstone' && CAPSTONE_USES.includes(ROWS[r])))));
+        threads.classList.toggle('is-lit', lab && lab.tool === 'capstone');
+        if (!lab) { readout.textContent = rest; return; }
+        const tool = lab.tool === 'capstone' ? 'Lab 12' : byId[lab.tool].name;
+        readout.innerHTML = '';
+        const head = document.createElement('strong');
+        head.textContent = `${title(lab)} · week ${lab.week}${lab.span ? '–' + (lab.week + lab.span - 1) : ''} · ${lab.topic}`;
+        const by = document.createElement('span');
+        by.className = 'cm-line';
+        by.textContent = `By hand: ${lab.hand}.`;
+        const at = document.createElement('span');
+        at.className = 'cm-line';
+        at.textContent = `In ${tool}: ${lab.scale}.`;
+        const a = document.createElement('a');
+        a.href = href(lab);
+        a.className = 'cm-open';
+        a.textContent = lab.tool === 'capstone' ? 'Start with the Bias Auditor →' : `Open ${byId[lab.tool].short} →`;
+        readout.append(head, by, at, a);
+    }
+    function open(i) { window.location.href = href(LABS[i]); }
+
+    svg.addEventListener('keydown', e => {
+        const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+        if (step) { e.preventDefault(); select(current < 0 ? 0 : (current + step + LABS.length) % LABS.length); }
+        else if (e.key === 'Enter' && current >= 0) open(current);
+        else if (e.key === 'Escape') select(-1);
     });
-    root.addEventListener('click', e => {
-        if (e.pointerType && e.pointerType !== 'mouse') return;
-        if (current >= 0) go(current);
-    });
+    if (note) note.textContent = 'Arrow keys or pointer to pick a lab; Enter or click opens its tool.';
+    select(-1);
 })();

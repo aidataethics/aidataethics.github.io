@@ -7,7 +7,7 @@
     <title>AI &amp; Data Ethics Toolkit</title>
     <meta name="description"
         content="An interactive toolkit for exploring AI ethics concepts including bias detection, model explainability, adversarial robustness, and more." />
-    <link rel="stylesheet" href="shared/tailwind.css?v=3.3.0" />
+    <link rel="stylesheet" href="shared/tailwind.css?v=3.4.0" />
     <style>
 
 
@@ -49,9 +49,9 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="shared/toolkit.css?v=3.3.0" />
-    <link rel="stylesheet" href="shared/line-figure.css?v=3.3.0" />
-    <link rel="icon" href="shared/favicon.svg?v=3.3.0" type="image/svg+xml">
+    <link rel="stylesheet" href="shared/toolkit.css?v=3.4.0" />
+    <link rel="stylesheet" href="shared/line-figure.css?v=3.4.0" />
+    <link rel="icon" href="shared/favicon.svg?v=3.4.0" type="image/svg+xml">
 </head>
 
 <body
@@ -70,7 +70,7 @@
                     &mdash; and measures it on real data in your browser. Nothing you load or type here leaves your
                     computer.</p>
               </div>
-              <figure class="project-figure lg:mr-0">
+              <figure class="project-figure lg:mr-0 mt-2 lg:mt-12">
                 <div id="course-figure" class="project-figure__canvas" aria-describedby="course-figure-readout"></div>
                 <figcaption><span id="course-figure-readout" aria-live="polite"></span>
                     <span class="project-figure__note">Arrow keys or pointer to pick a lab; Enter or click opens its tool.</span>
@@ -147,15 +147,15 @@
             list.innerHTML = rows.join('');
         }
     </script>
-    <script src="shared/session.js?v=3.3.0"></script>
-    <script src="shared/toolkit.js?v=3.3.0"></script>
+    <script src="shared/session.js?v=3.4.0"></script>
+    <script src="shared/toolkit.js?v=3.4.0"></script>
     <script>
         Toolkit.mountShell({ active: 'overview' });
         renderToolList();
         ToolkitSession.maybeOfferConsent();
     </script>
-    <script src="shared/line-figure.js?v=3.3.0"></script>
-    <script src="shared/figures/course-figure.js?v=3.3.0"></script>
+    <script src="shared/line-figure.js?v=3.4.0"></script>
+    <script src="shared/figures/course-figure.js?v=3.4.0"></script>
 </body>
 
 </html>

@@ -1,140 +1,199 @@
-// Privacy & Anonymization Lab (tools/privacy-lab.html): what k-anonymity
-// does to a table. Each tray is the same 36-patient table after the tool's
-// lattice search has generalised it for a given k. Every sheet is one patient
-// record; records that can no longer be told apart (same generalised Age and
-// ZIP) are stacked together, so each stack is an equivalence class and its
-// height is the class size. Records the search suppressed rather than
-// over-generalise lie beside the tray as dashed sheets. Read left to right:
-// as k rises the stacks merge and grow taller - fewer, larger crowds to hide
-// in - and the information lost climbs.
+// Privacy & Anonymization Lab (tools/privacy-lab.html): hiding in a crowd of k.
 //
-// Data: computed by running the page's own findMinimalGeneralization(k, l=1,
-// suppression=20%) over its SAMPLE_DATA (36 rows), then counting class sizes.
-// k = 5, 6 and 7 produce the same table, as do k = 8 to 12, so those share a
-// tray. If SAMPLE_DATA, the hierarchies or the search change, re-run and
-// update STAGES.
+// A flat drawing of the lab's 36-patient table after k-anonymisation. Each box
+// is one crowd (equivalence class): everyone whose released age band and ZIP
+// match, so an attacker who knows your age and ZIP is left guessing among the
+// people in your box. Each token is one patient, marked with their condition.
+// Patients the search set aside (suppressed) wait in a dashed box.
+//
+// Nothing is precomputed. The figure calls the page's own
+// findMinimalGeneralization, applyGeneralization and computeEquivalenceClasses
+// on SAMPLE_DATA, so it always agrees with the Anonymize button below it. The
+// suppression budget is fixed at 20%, the lab's default.
+//
+// What the interaction is for:
+//   - the k slider shows crowds merging and loss climbing as k rises;
+//   - the l = 2 switch shows what k alone misses: a crowd where everyone has
+//     the same condition (outlined in red) gives the diagnosis away;
+//   - hovering a token, or moving through crowds with the arrow keys, reads
+//     out one patient's real row next to what is released about them;
+//   - "Run this in the lab" hands the same settings to the full table below.
 (function () {
     const root = document.getElementById('kanon-figure');
-    if (!root || !window.LineFigure) return;
-    const { iso, el, svg: makeSvg, box, edgeLabel, nearest, interact, face, onNear, onEnd } = window.LineFigure;
+    const readout = document.getElementById('kanon-figure-readout');
+    if (!root || typeof findMinimalGeneralization !== 'function') return;
 
-    const STAGES = [
-        { k: '1', age: 'exact ages', zip: 'full ZIP', sizes: Array(36).fill(1), suppressed: 0, loss: 0 },
-        { k: '2', age: '5-year bins', zip: 'ZIP to 4 digits', sizes: [5, 5, 5, 4, 4, 4, 4, 3, 2], suppressed: 0, loss: 14.9 },
-        { k: '3', age: '5-year bins', zip: 'ZIP to 4 digits', sizes: [5, 5, 5, 4, 4, 4, 4, 3], suppressed: 2, loss: 19.6 },
-        { k: '4', age: '5-year bins', zip: 'ZIP to 4 digits', sizes: [5, 5, 5, 4, 4, 4, 4], suppressed: 5, loss: 26.7 },
-        { k: '5–7', age: '10-year bins', zip: 'ZIP to 4 digits', sizes: [9, 9, 8, 7], suppressed: 3, loss: 27.6 },
-        { k: '8–12', age: '20-year bins', zip: 'ZIP to 4 digits', sizes: [17, 16], suppressed: 3, loss: 38.7 },
-    ];
+    const SUPPRESSION = 0.20;
+    const CODE = { Allergy: 'Al', Asthma: 'As', Cancer: 'Ca', Diabetes: 'Di', Flu: 'Fl', 'Heart Disease': 'HD' };
+    const W = 660;          // viewBox width
+    const TOK = 24;         // token size
+    const GAP = 3;          // between tokens
+    const PAD = 7;          // inside a crowd box
+    const PER_ROW = 6;      // tokens per row in a crowd
+    const HEAD = 30;        // label space above each box
+    const CROWD_GAP = 12;   // between boxes
+    const NS = 'http://www.w3.org/2000/svg';
 
-    const TRAY = 36;      // tray side (u and v)
-    const GAP = 14;       // gap between trays along u
-    const T = 3;          // tray thickness
-    const SHEET = 1.8;    // height one record adds to its stack
-    const CELL = TRAY / 6; // the raw table needs a 6x6 grid; others use fewer cells
-    const LIFT = 5;       // a picked tray's stacks rise this much
-
-    const trayU = i => i * (TRAY + GAP);
-
-    // Lay a stage's stacks on a square grid centred on its tray.
-    function layout(stage, i) {
-        const n = stage.sizes.length;
-        const cols = Math.ceil(Math.sqrt(n));
-        const rows = Math.ceil(n / cols);
-        const pitch = Math.min(CELL * 1.6, (TRAY - 6) / Math.max(cols, rows));
-        const foot = Math.min(pitch * 0.62, 7);
-        const u0 = trayU(i) + (TRAY - cols * pitch) / 2;
-        const v0 = (TRAY - rows * pitch) / 2;
-        return stage.sizes.map((size, j) => ({
-            size,
-            u: u0 + (j % cols) * pitch + (pitch - foot) / 2,
-            v: v0 + Math.floor(j / cols) * pitch + (pitch - foot) / 2,
-            foot
-        }));
-    }
-
-    const svg = makeSvg(root, '0 0 100 100',
-        'Six trays left to right, each the same 36-record patient table generalised for a larger k. Every record is a ' +
-        'thin sheet; records that share the same generalised age and ZIP are stacked. The first tray has 36 separate ' +
-        'sheets; by k of 8 the table is two tall stacks of 17 and 16, with three records set aside, and information ' +
-        'loss has risen from 0 to 38.7 percent.');
-
-    const trays = [];
-    // Farthest first: larger u is farther back.
-    for (let i = STAGES.length - 1; i >= 0; i--) {
-        const g = el('g', {}, svg);
-        box(g, 'lf-solid').set(trayU(i), 0, -T, trayU(i) + TRAY, TRAY, 0);
-        edgeLabel(g, `k = ${STAGES[i].k}`, trayU(i) + 2, TRAY, -T - 1.5, 'lf-text');
-
-        // Stacks, farthest first within the tray. Each is one solid with a line
-        // per record ruled on its two visible sides, like the edge of a closed
-        // book, so a stack's records can be counted without drawing every sheet.
-        const stacks = layout(STAGES[i], i)
-            .sort((a, b) => (a.v - a.u) - (b.v - b.u))
-            .map(st => {
-                const sg = el('g', {}, g);
-                const solid = box(sg, 'lf-solid');
-                const near = face(sg, '');
-                const end = face(sg, '');
-                for (let k = 1; k < st.size; k++) {
-                    el('line', { x1: 0, y1: k * SHEET, x2: st.foot, y2: k * SHEET, class: 'lf-line lf-faint' }, near);
-                    el('line', { x1: 0, y1: k * SHEET, x2: st.foot, y2: k * SHEET, class: 'lf-line lf-faint' }, end);
-                }
-                return { ...st, solid, near, end };
-            });
-
-        // suppressed records: dashed sheets set aside in front of the tray
-        const ghost = el('g', { class: 'lf-ghost' }, svg);
-        const ghosts = Array.from({ length: STAGES[i].suppressed }, (_, j) => {
-            const b = box(ghost, '');
-            b.set(trayU(i) + 4 + j * 3.4, TRAY + 5, 0, trayU(i) + 7 + j * 3.4, TRAY + 9, SHEET);
-            return b;
-        });
-        trays[i] = { g, stacks, ghost, ghosts };
-    }
-
-    const xs = STAGES.map((_, i) => iso(trayU(i) + TRAY / 2, TRAY / 2)[0]);
-
-    function draw(glow, active) {
-        trays.forEach((t, i) => {
-            const lift = LIFT * glow[i];
-            t.stacks.forEach(st => {
-                const top = lift + st.size * SHEET;
-                st.solid.set(st.u, st.v, lift, st.u + st.foot, st.v + st.foot, top);
-                st.near.setAttribute('transform', onNear(st.u, st.v + st.foot, top));
-                st.end.setAttribute('transform', onEnd(st.u, st.v, top));
-            });
-            t.g.classList.toggle('is-lit', i === active);
-            t.ghost.classList.toggle('is-lit', i === active);
-        });
-    }
-
-    // Fit the viewBox to what was drawn, plus room for a lifted tray. The
-    // figure sits in a tab that is hidden on load, and getBBox() measures zero
-    // inside display:none, so the fit waits until the figure has a size.
-    draw(new Array(STAGES.length).fill(0), -1);
-    const fit = () => {
-        const b = svg.getBBox();
-        if (!b.width) return false;
-        svg.setAttribute('viewBox', [b.x - 6, b.y - 24, b.width + 12, b.height + 30].map(v => v.toFixed(1)).join(' '));
-        return true;
+    const el = (tag, attrs = {}, parent) => {
+        const n = document.createElementNS(NS, tag);
+        Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+        if (parent) parent.appendChild(n);
+        return n;
     };
-    if (!fit()) {
-        const ro = new ResizeObserver(() => { if (fit()) ro.disconnect(); });
-        ro.observe(root);
+
+    // ---------------------------------------------------------- controls
+    root.insertAdjacentHTML('beforebegin', `
+        <div class="kanon-controls flex flex-wrap items-center gap-x-5 gap-y-2 mb-3 text-sm">
+            <label class="flex items-center gap-2">
+                <span class="font-semibold">k</span>
+                <input id="kanonK" type="range" min="1" max="12" step="1" value="3" class="w-40 accent-primary"
+                       aria-describedby="kanon-figure-readout">
+                <output id="kanonKOut" for="kanonK" class="tabular-nums font-semibold w-6">3</output>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input id="kanonL" type="checkbox" class="accent-primary">
+                <span>every crowd needs 2 different conditions (l = 2)</span>
+            </label>
+            <button id="kanonRun" type="button" class="sm:ml-auto text-primary hover:underline">Run this in the lab below</button>
+        </div>`);
+    const kInput = document.getElementById('kanonK');
+    const kOut = document.getElementById('kanonKOut');
+    const lInput = document.getElementById('kanonL');
+
+    const svg = el('svg', { viewBox: `0 0 ${W} 200`, role: 'img', tabindex: '0',
+        'aria-label': 'The 36 patients grouped into crowds that share a released age band and ZIP code.' }, root);
+    svg.style.overflow = 'visible';
+
+    let crowds = [];        // { key, age, zip, members:[{row, released}], homogeneous, g }
+    let active = -1;
+    let summary = '';
+
+    function compute() {
+        const k = +kInput.value;
+        const l = lInput.checked ? 2 : 1;
+        const res = findMinimalGeneralization(k, l, SUPPRESSION);
+        if (!res) return { k, l, none: true };
+        // res.generalized is SAMPLE_DATA generalised in the same order, and
+        // res.kept holds the very objects that survived suppression.
+        const index = new Map(res.generalized.map((g, i) => [g, i]));
+        const kept = new Set(res.kept);
+        const out = [];
+        const setAside = [];
+        Object.entries(computeEquivalenceClasses(res.generalized)).forEach(([key, members]) => {
+            const rows = members.map(m => ({ row: SAMPLE_DATA[index.get(m)], released: m }));
+            if (members.every(m => kept.has(m))) out.push({ key, age: members[0].Age, zip: members[0].ZIP, members: rows });
+            else setAside.push(...rows);
+        });
+        out.sort((a, b) => parseInt(a.age) - parseInt(b.age) || a.zip.localeCompare(b.zip));
+        out.forEach(c => { c.homogeneous = c.members.length > 1 && new Set(c.members.map(m => m.row.Condition)).size === 1; });
+        if (setAside.length) out.push({ key: 'suppressed', suppressed: true, members: setAside });
+        return { k, l, res, crowds: out };
     }
 
-    interact({
-        root, svg, count: STAGES.length,
-        rest: 'One table, generalised for larger k. Pick a tray to see what hiding in a crowd of k costs.',
-        describe: i => {
-            const s = STAGES[i];
-            if (i === 0) return 'No generalisation · 36 classes of one: every record unique · information loss 0%';
-            const smallest = Math.min(...s.sizes);
-            return `k = ${s.k} · ${s.age}, ${s.zip} · ${s.sizes.length} classes, smallest ${smallest}` +
-                (s.suppressed ? ` · ${s.suppressed} suppressed` : '') + ` · loss ${s.loss}%`;
-        },
-        pick: x => nearest(x, xs, 30),
-        draw
+    function draw() {
+        kOut.textContent = kInput.value;
+        const r = compute();
+        svg.replaceChildren();
+        if (r.none) {
+            crowds = [];
+            el('text', { x: 0, y: 30, class: 'lf-label' }, svg).textContent =
+                `No setting reaches k = ${r.k}${r.l > 1 ? ' with l = 2' : ''} without setting aside more than 20% of patients.`;
+            svg.setAttribute('viewBox', `0 0 ${W} 50`);
+            summary = 'No release possible at these settings.';
+            readout.textContent = summary;
+            return;
+        }
+        crowds = r.crowds;
+        // flow layout
+        let x = 0, y = 0, rowH = 0;
+        crowds.forEach(c => {
+            const n = c.members.length;
+            const cols = Math.min(n, PER_ROW), rows = Math.ceil(n / PER_ROW);
+            const bw = Math.max(cols * (TOK + GAP) - GAP + 2 * PAD, c.suppressed ? 120 : 52);
+            const bh = rows * (TOK + GAP) - GAP + 2 * PAD;
+            if (x + bw > W && x > 0) { x = 0; y += rowH + CROWD_GAP; rowH = 0; }
+            c.x = x; c.y = y; c.w = bw; c.h = bh;
+            x += bw + CROWD_GAP;
+            rowH = Math.max(rowH, HEAD + bh);
+        });
+        const height = y + rowH;
+        svg.setAttribute('viewBox', `0 0 ${W} ${height + 4}`);
+
+        crowds.forEach((c, i) => {
+            const g = el('g', { class: 'kanon-crowd' + (c.homogeneous ? ' is-homogeneous' : '') + (c.suppressed ? ' is-suppressed' : '') }, svg);
+            c.g = g;
+            const head = el('text', { x: c.x, y: c.y + 12, class: 'lf-label kanon-head' }, g);
+            head.textContent = c.suppressed ? 'set aside' : `${c.age} · ${c.zip}`;
+            const sub = el('text', { x: c.x, y: c.y + 24, class: 'lf-label kanon-sub' }, g);
+            sub.textContent = c.suppressed ? `${c.members.length} suppressed`
+                : c.homogeneous ? `all ${c.members[0].row.Condition}` : `${c.members.length} ${c.members.length === 1 ? 'alone' : 'together'}`;
+            el('rect', { x: c.x, y: c.y + HEAD, width: c.w, height: c.h, rx: 5, class: 'kanon-box' }, g);
+            c.members.forEach((m, j) => {
+                const tx = c.x + PAD + (j % PER_ROW) * (TOK + GAP);
+                const ty = c.y + HEAD + PAD + Math.floor(j / PER_ROW) * (TOK + GAP);
+                const t = el('g', { class: 'kanon-token' }, g);
+                el('rect', { x: tx, y: ty, width: TOK, height: TOK, rx: 3 }, t);
+                el('text', { x: tx + TOK / 2, y: ty + TOK / 2 + 4, 'text-anchor': 'middle' }, t).textContent = CODE[m.row.Condition] || '?';
+                t.addEventListener('pointerenter', () => { select(i, false); readout.textContent = describePatient(c, m); });
+            });
+            g.addEventListener('pointerenter', () => select(i, false));
+        });
+
+        const sizes = crowds.filter(c => !c.suppressed).map(c => c.members.length);
+        const set = crowds.find(c => c.suppressed);
+        const leaks = crowds.filter(c => c.homogeneous).length;
+        const ageW = AGE_LEVELS[r.res.ageLevel], zipK = ZIP_LEVELS[r.res.zipLevel];
+        const how = `${ageW === 1 ? 'exact ages' : ageW === null ? 'age removed' : ageW + '-year bands'}, ${zipK === 5 ? 'full ZIP' : zipK === 0 ? 'ZIP removed' : 'ZIP to ' + zipK + ' digits'}`;
+        summary = `k = ${r.k}${r.l > 1 ? ', l = 2' : ''} · ${how} · ${sizes.length} crowds, smallest ${Math.min(...sizes)}` +
+            (set ? ` · ${set.members.length} set aside` : '') + ` · information loss ${(r.res.loss * 100).toFixed(1)}%` +
+            (leaks ? ` · ${leaks} crowd${leaks > 1 ? "s give" : " gives"} away the diagnosis` : "");
+        active = -1;
+        readout.textContent = summary;
+    }
+
+    function describePatient(c, m) {
+        const p = m.row;
+        if (c.suppressed) return `${p.Name}, ${p.Age}, ${p.ZIP}, ${p.Condition}: set aside, not released at all.`;
+        const n = c.members.length;
+        const same = c.members.filter(o => o.row.Condition === p.Condition).length;
+        return `${p.Name}, ${p.Age}, ${p.ZIP}, ${p.Condition} → released as ${c.age} · ${c.zip}. ` +
+            (n === 1 ? 'Alone in the crowd: anyone who knows the age and ZIP finds this row.'
+                : `1 of ${n} who look alike; ${same === n ? 'all have ' + p.Condition + ', so the diagnosis leaks anyway' : same + ' of ' + n + ' have ' + p.Condition}.`);
+    }
+
+    function describeCrowd(c) {
+        if (c.suppressed) return `Set aside: ${c.members.map(m => m.row.Name.split(' ')[0]).join(', ')}. Suppressed rather than blur everyone else further.`;
+        const counts = {};
+        c.members.forEach(m => { counts[m.row.Condition] = (counts[m.row.Condition] || 0) + 1; });
+        return `${c.age} · ${c.zip}: ${c.members.length} patient${c.members.length > 1 ? 's' : ''} (${c.members.map(m => m.row.Name.split(' ')[0]).join(', ')}). ` +
+            Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ') + (c.homogeneous ? '. Same diagnosis for all: k hides who, not what.' : '.');
+    }
+
+    function select(i, announce = true) {
+        active = i;
+        crowds.forEach((c, j) => c.g && c.g.classList.toggle('is-lit', j === i));
+        if (announce && crowds[i]) readout.textContent = describeCrowd(crowds[i]);
+    }
+
+    svg.addEventListener('pointerleave', () => { select(-1, false); readout.textContent = summary; });
+    svg.addEventListener('keydown', e => {
+        if (!crowds.length) return;
+        const keys = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+        if (e.key in keys) {
+            e.preventDefault();
+            select(active < 0 ? 0 : (active + keys[e.key] + crowds.length) % crowds.length);
+        } else if (e.key === 'Escape') { select(-1, false); readout.textContent = summary; }
     });
+    kInput.addEventListener('input', draw);
+    lInput.addEventListener('change', draw);
+    document.getElementById('kanonRun').addEventListener('click', () => {
+        const set = (id, v) => { const n = document.getElementById(id); if (!n) return; n.value = v; n.dispatchEvent(new Event('input', { bubbles: true })); n.dispatchEvent(new Event('change', { bubbles: true })); };
+        set('kValue', kInput.value);
+        set('lValue', lInput.checked ? 2 : 1);
+        set('suppressValue', SUPPRESSION * 100);
+        if (typeof applyAnonymization === 'function') applyAnonymization();
+        document.getElementById('anonResult')?.closest('div')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    draw();
 })();

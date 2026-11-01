@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Privacy & Anonymization Lab | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.3.0" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.4.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <style>
 
@@ -51,9 +51,9 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.3.0" />
-    <link rel="stylesheet" href="../shared/line-figure.css?v=3.3.0" />
-    <link rel="icon" href="../shared/favicon.svg?v=3.3.0" type="image/svg+xml">
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.4.0" />
+    <link rel="stylesheet" href="../shared/line-figure.css?v=3.4.0" />
+    <link rel="icon" href="../shared/favicon.svg?v=3.4.0" type="image/svg+xml">
 </head>
 
 <body
@@ -156,18 +156,20 @@ Thanks, John</textarea>
                     <div>
                         <h2 id="kanonHeading">Hiding in a crowd of k</h2>
                         <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                            Each sheet is one patient. Patients whose generalised age and ZIP match are stacked: they
-                            can no longer be told apart, so an attacker who knows your age and ZIP is left guessing
-                            among everyone in your stack. k-anonymity asks that the smallest stack hold at least k.</p>
+                            Each box is a crowd: patients whose released age band and ZIP match, so someone who
+                            knows your age and ZIP is left guessing among everyone in your box. Each token is one
+                            patient, marked with their condition. k-anonymity asks that the smallest crowd hold at
+                            least k.</p>
                         <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                            Raising k merges the stacks but blurs the data: watch the information loss climb. Try it on
-                            paper first with the lecture worksheet, then set <strong>k</strong> below and compare.</p>
+                            Raise k and watch the crowds merge and the information loss climb. Then look for a box
+                            outlined in red: everyone in it has the same condition, so being hidden does not keep the
+                            diagnosis secret. Switch on l = 2 to see what that costs.</p>
                     </div>
                     <figure class="project-figure" style="max-width:none">
                         <div id="kanon-figure" class="project-figure__canvas"></div>
                         <figcaption><span id="kanon-figure-readout" aria-live="polite"></span>
-                            <span class="project-figure__note">The tool's own lattice search on its 36-row table, suppression budget 20%.
-                                Dashed sheets: records suppressed rather than generalised.</span>
+                            <span class="project-figure__note">The lab's own search on its 36-patient table, suppression budget 20%.
+                                Al Allergy · As Asthma · Ca Cancer · Di Diabetes · Fl Flu · HD Heart Disease. Hover a patient, or use the arrow keys.</span>
                         </figcaption>
                     </figure>
                 </div>
@@ -899,8 +901,8 @@ Thanks, John</textarea>
         renderOriginalData();
         updateDPCost();
     </script>
-    <script src="../shared/session.js?v=3.3.0"></script>
-    <script src="../shared/toolkit.js?v=3.3.0"></script>
+    <script src="../shared/session.js?v=3.4.0"></script>
+    <script src="../shared/toolkit.js?v=3.4.0"></script>
     <script>
         Toolkit.mountShell({ active: 'privacy-lab' });
         ToolkitSession.maybeOfferConsent();
@@ -986,8 +988,8 @@ Thanks, John</textarea>
             return plainifyNode(el, false);
         }
     </script>
-    <script src="../shared/line-figure.js?v=3.3.0"></script>
-    <script src="../shared/figures/kanon-figure.js?v=3.3.0"></script>
+    <script src="../shared/line-figure.js?v=3.4.0"></script>
+    <script src="../shared/figures/kanon-figure.js?v=3.4.0"></script>
 </body>
 
 </html>
