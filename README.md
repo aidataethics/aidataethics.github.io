@@ -60,7 +60,7 @@ need a network connection on first use.
 | Behavioral Testing Lab | CheckList-style behavioural tests (MFT, INV, DIR) of the explainability lab's sentiment model, from templates students write |
 | Dataset Bias Auditor | Selection-rate and error-rate fairness metrics from a real confusion matrix |
 | Adversarial Robustness Sandbox | FGSM attacks against MobileNet v2, in the browser |
-| Filter Bubble Simulator | Feed diversity under engagement optimisation, with a chronological control |
+| Filter Bubble Simulator | Feed diversity under engagement optimisation, on 288 real headlines labelled left, center or right (Article-Bias-Prediction, Apache-2.0; rebuilt by `data/sample_news_feed.py`), with a chronological control |
 | Privacy & Anonymization Lab | k-anonymity lattice search, l-diversity, and a differential privacy budget you can exhaust |
 | Value Alignment Tool | Twelve real AI dilemmas mapped across five ethical frameworks |
 | Proxy Variable Detector | How strongly ordinary features encode protected attributes |

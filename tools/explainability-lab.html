@@ -5,9 +5,9 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Model Explainability Lab | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.5.0" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.6.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
-    <script src="../shared/sentiment-model.js?v=3.5.0"></script>
+    <script src="../shared/sentiment-model.js?v=3.6.0"></script>
     <style>
 
 
@@ -40,6 +40,8 @@
             }
             var s = saved();
             apply(s ? s === 'dark' : !!(mq && mq.matches));
+            // sidebar mode (full, compact or hidden), set before first paint like the theme
+            try { root.setAttribute('data-nav', localStorage.getItem('ethicsToolkitNav') || 'full'); } catch (e) { root.setAttribute('data-nav', 'full'); }
             if (mq && mq.addEventListener) {
                 mq.addEventListener('change', function (e) {
                     if (!saved()) {
@@ -54,8 +56,8 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.5.0" />
-    <link rel="icon" href="../shared/favicon.svg?v=3.5.0" type="image/svg+xml">
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.6.0" />
+    <link rel="icon" href="../shared/favicon.svg?v=3.6.0" type="image/svg+xml">
 </head>
 
 <body
@@ -992,8 +994,8 @@
         // ==================== INIT ====================
         loadSentimentModel().then(() => analyzeSentiment());
     </script>
-    <script src="../shared/session.js?v=3.5.0"></script>
-    <script src="../shared/toolkit.js?v=3.5.0"></script>
+    <script src="../shared/session.js?v=3.6.0"></script>
+    <script src="../shared/toolkit.js?v=3.6.0"></script>
     <script>
         Toolkit.mountShell({ active: 'explainability-lab' });
         ToolkitSession.maybeOfferConsent();

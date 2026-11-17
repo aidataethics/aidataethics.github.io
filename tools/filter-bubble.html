@@ -5,28 +5,68 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Filter Bubble Simulator | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="../shared/tailwind.css?v=3.5.0" />
+    <link rel="stylesheet" href="../shared/tailwind.css?v=3.6.0" />
     <script src="../vendor/plotly-2.27.0.min.js"></script>
     <style>
 
 
 
 
-        .feed-card {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        /* The timeline: posts split by hairline rules, as on X, in the
+           toolkit's ink-on-paper style. An outlet's monogram stands in for
+           its avatar (no logos are fetched); topic colour survives only as a
+           small swatch in the link card. */
+        .fb-item { padding: 0.85rem 0.75rem 0.55rem; cursor: pointer;
+                   border-top: 1px solid rgb(var(--c-text) / 0.1); transition: background-color 0.15s ease;
+                   animation: fbIn 0.3s ease-out both; }
+        .fb-item:first-child { border-top: 0; }
+        .fb-item:hover { background: rgb(var(--c-text) / 0.025); }
+        .fb-context { display: flex; align-items: center; gap: 0.35rem; margin: 0 0 0.3rem 1.6rem;
+                      font-size: 0.74rem; font-weight: 600; color: rgb(var(--n-500)); }
+        .fb-context .material-icons-outlined { font-size: 0.95rem; }
+        .fb-row { display: flex; gap: 0.7rem; }
+        .fb-avatar { flex: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center;
+                     background: rgb(var(--c-surface-2)); border: 1px solid rgb(var(--c-text) / 0.1);
+                     font-family: Newsreader, Georgia, serif; font-weight: 600; font-size: 0.9rem; letter-spacing: -0.02em;
+                     color: rgb(var(--c-text) / 0.8); }
+        .fb-body { flex: 1; min-width: 0; }
+        .fb-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.4rem; font-size: 0.82rem; line-height: 1.3; }
+        .fb-name { font-weight: 600; color: rgb(var(--c-text)); }
+        .fb-handle { color: rgb(var(--n-500)); }
+        .fb-lean { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+                   padding: 0 0.35rem; border-radius: 3px; border: 1px solid currentColor; line-height: 1.35; }
+        .fb-lean-left { color: #3466b8; } .fb-lean-center { color: rgb(var(--n-500)); } .fb-lean-right { color: #b5403a; }
+        .dark .fb-lean-left { color: #8eaee8; } .dark .fb-lean-right { color: #ec9a92; }
+        .fb-lean-bar-left { background: #3466b8; } .fb-lean-bar-center { background: rgb(var(--n-400)); } .fb-lean-bar-right { background: #b5403a; }
+        .dark .fb-lean-bar-left { background: #8eaee8; } .dark .fb-lean-bar-right { background: #ec9a92; }
+        .fb-lean-strip { display: flex; gap: 2px; height: 0.45rem; border-radius: 999px; overflow: hidden; }
+        .fb-text { display: block; margin-top: 0.15rem; text-align: left; font-size: 0.95rem; line-height: 1.4;
+                   font-weight: 500; color: rgb(var(--c-text)); }
+        .fb-text:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+        .fb-card { display: block; margin-top: 0.5rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem;
+                   border: 1px solid rgb(var(--c-text) / 0.12); text-decoration: none; transition: background-color 0.15s ease; }
+        .fb-card:hover { background: rgb(var(--c-text) / 0.03); }
+        .fb-card-meta { display: flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; color: rgb(var(--n-500)); }
+        .fb-card-meta .material-icons-outlined { font-size: 0.85rem; margin-left: auto; }
+        .fb-card-text { display: block; margin-top: 0.2rem; font-family: Newsreader, Georgia, serif; font-size: 0.9rem;
+                        line-height: 1.4; color: rgb(var(--c-text) / 0.75); }
+        .fb-swatch { width: 0.55rem; height: 0.55rem; border-radius: 2px; flex: none; }
+        .fb-actions { display: flex; gap: 1.25rem; margin: 0.35rem 0 0 -0.55rem; }
+        .fb-act { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.55rem; border-radius: 999px;
+                  font-size: 0.74rem; color: rgb(var(--n-500)); transition: color 0.15s ease, background-color 0.15s ease; }
+        .fb-act:hover { color: rgb(var(--c-text)); background: rgb(var(--c-text) / 0.06); }
+        .fb-act .material-icons-outlined { font-size: 1rem; }
+        .fb-act.is-like[aria-pressed="true"] { color: rgb(var(--c-danger)); }
+        .fb-act.is-share[aria-pressed="true"] { color: rgb(var(--c-accent)); }
+        .fb-act[aria-pressed="true"] .material-icons-outlined { animation: fbPop 0.35s ease-out; }
+        @keyframes fbPop { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
+        @keyframes fbIn { from { opacity: 0; } to { opacity: 1; } }
+        .fb-ico { font-size: 1.05em !important; vertical-align: -0.18em; }
+        .fb-ico-sm { font-size: 0.95em !important; margin-right: 1px; }
+        .engage-note { border-left: 2px solid rgb(var(--c-accent)); padding: 0.15rem 0 0.15rem 0.8rem;
+                       font-size: 0.8rem; line-height: 1.5; color: rgb(var(--c-text) / 0.85); }
+        .engage-note b { font-weight: 600; }
+        .engage-note .delta { font-variant-numeric: tabular-nums; white-space: nowrap; }
     </style>
     <script>
         // Paint the theme before first render. Until the student chooses one,
@@ -42,6 +82,8 @@
             }
             var s = saved();
             apply(s ? s === 'dark' : !!(mq && mq.matches));
+            // sidebar mode (full, compact or hidden), set before first paint like the theme
+            try { root.setAttribute('data-nav', localStorage.getItem('ethicsToolkitNav') || 'full'); } catch (e) { root.setAttribute('data-nav', 'full'); }
             if (mq && mq.addEventListener) {
                 mq.addEventListener('change', function (e) {
                     if (!saved()) {
@@ -56,8 +98,8 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="../shared/toolkit.css?v=3.5.0" />
-    <link rel="icon" href="../shared/favicon.svg?v=3.5.0" type="image/svg+xml">
+    <link rel="stylesheet" href="../shared/toolkit.css?v=3.6.0" />
+    <link rel="icon" href="../shared/favicon.svg?v=3.6.0" type="image/svg+xml">
 </head>
 
 <body
@@ -135,7 +177,9 @@
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
                     <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">User Profile</h2>
-                    <div class="grid grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2" id="userProfile"></div>
+                    <div class="grid grid-cols-[max-content_minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2" id="userProfile"></div>
+                    <h3 class="eyebrow mt-4 mb-2">Which side you engage with</h3>
+                    <div class="grid grid-cols-[max-content_minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2" id="leanProfile"></div>
                 </div>
 
                 <div class="flex gap-2">
@@ -174,6 +218,11 @@
                             <span class="text-slate-500">Echo Chamber</span>
                             <span id="echoLevel" class="font-bold text-green-500">None</span>
                         </div>
+                        <div class="flex justify-between text-sm pt-1">
+                            <span class="text-slate-500">Outlets in this feed</span>
+                            <span id="feedLeanText" class="text-xs text-slate-500 tabular-nums"></span>
+                        </div>
+                        <div id="feedLean" class="fb-lean-strip" aria-hidden="true"></div>
                     </div>
                 </div>
             </div>
@@ -182,11 +231,25 @@
             <div class="lg:col-span-2">
                 <div
                     class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
-                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">
-                        <span class="material-icons-outlined text-primary mr-2 align-middle" aria-hidden="true">dynamic_feed</span> Your
-                        Feed
-                    </h2>
-                    <div id="feedContainer" class="space-y-3 max-h-[600px] overflow-y-auto"></div>
+                    <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Your timeline</h2>
+                        <label class="text-xs text-slate-500 flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="showLean" checked class="rounded border-slate-300 text-primary focus:ring-primary">
+                            Show each outlet's lean
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+                        Real headlines from 2012–2020: 288 stories from about 35 US outlets, from the
+                        Article-Bias-Prediction dataset (Baly et al., 2020). Each is labelled <b>left</b>,
+                        <b>center</b> or <b>right</b> by AllSides, which rates mostly by outlet, so the label says
+                        where a story was published, not whether its headline is fair. Each action is a signal:
+                        <b>read</b> adds 0.5 to the story's topic and side, <b>like</b> 1.0, and <b>repost</b> 1.5,
+                        and a repost also reaches your friends, who pass that topic back for a few steps. Everything
+                        else fades by 3%. The weights are illustrative: platforms likewise count a repost for more
+                        than a like, and a like for more than a click. The link under a headline opens the original
+                        article and does not count.</p>
+                    <div id="engageNote" class="engage-note mb-3" aria-live="polite"></div>
+                    <div id="feedContainer" class="max-h-[720px] overflow-y-auto border-t border-slate-200 dark:border-slate-700/60"><p class="p-4 text-sm text-slate-500">Loading stories…</p></div>
                 </div>
             </div>
 
@@ -230,60 +293,44 @@
 
     <script>
 
-        // Content Pool
-        const TOPICS = {
-            politics_left: { label: 'Progressive Politics', color: '#3b82f6', icon: 'campaign' },
-            politics_right: { label: 'Conservative Politics', color: '#ef4444', icon: 'flag' },
-            tech: { label: 'Technology', color: '#8b5cf6', icon: 'computer' },
-            science: { label: 'Science', color: '#22c55e', icon: 'science' },
-            sports: { label: 'Sports', color: '#f59e0b', icon: 'sports_soccer' },
-            entertainment: { label: 'Entertainment', color: '#ec4899', icon: 'movie' },
-            health: { label: 'Health & Wellness', color: '#14b8a6', icon: 'favorite' },
-            business: { label: 'Business', color: '#6366f1', icon: 'trending_up' }
+        // Content: 288 real headlines (2012-2020), 12 per topic per lean, from
+        // the Article-Bias-Prediction dataset (Baly et al., EMNLP 2020;
+        // Apache-2.0). Lean is AllSides' left / center / right label.
+        // Built by data/sample_news_feed.py; loaded below.
+        const TOPIC_STYLE = {
+            sports:      { color: '#f59e0b' },
+            immigration: { color: '#ef4444' },
+            health:      { color: '#14b8a6' },
+            guns:        { color: '#64748b' },
+            environment: { color: '#22c55e' },
+            economy:     { color: '#6366f1' },
+            education:   { color: '#ec4899' },
+            tech:        { color: '#8b5cf6' },
+        };
+        let TOPICS = {};
+        let ARTICLES = [];
+        const LEANS = { left: 'Left', center: 'Center', right: 'Right' };
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const fmtDate = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const monogram = name => {
+            if (/^[A-Z]{2,4}$/.test(name)) return name;
+            const words = name.replace(/^The\s+/, '').split(/\s+/);
+            return words.length === 1 ? words[0][0] : words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
         };
 
-        const ARTICLES = [
-            { topic: 'politics_left', title: 'New Climate Policy Gains Momentum', summary: 'Progressive lawmakers push for ambitious environmental targets.', ts: 1 },
-            { topic: 'politics_left', title: 'Universal Healthcare Bill Introduced', summary: 'Bipartisan support grows for expanded coverage.', ts: 2 },
-            { topic: 'politics_left', title: 'Worker Rights Reform Package Advances', summary: 'Labor unions celebrate minimum wage increase.', ts: 5 },
-            { topic: 'politics_left', title: 'Social Justice Movement Reaches New Heights', summary: 'Nationwide protests drive policy change.', ts: 8 },
-            { topic: 'politics_right', title: 'Tax Reform Plan Unveiled', summary: 'Economic conservatives propose simplified tax code.', ts: 3 },
-            { topic: 'politics_right', title: 'Border Security Funding Approved', summary: 'New immigration enforcement measures take effect.', ts: 4 },
-            { topic: 'politics_right', title: 'Deregulation Spurs Small Business Growth', summary: 'Entrepreneurs cite reduced red tape as key factor.', ts: 7 },
-            { topic: 'politics_right', title: 'Traditional Values Rally Draws Thousands', summary: 'Community leaders emphasize family-first policies.', ts: 10 },
-            { topic: 'tech', title: 'AI Breakthrough in Natural Language', summary: 'New transformer model achieves human-level comprehension.', ts: 6 },
-            { topic: 'tech', title: 'Quantum Computing Milestone Reached', summary: 'Tech giant demonstrates quantum advantage.', ts: 9 },
-            { topic: 'tech', title: 'Electric Vehicle Sales Surge 40%', summary: 'Battery technology improvements drive adoption.', ts: 11 },
-            { topic: 'tech', title: 'Cybersecurity Threats Evolve with AI', summary: 'Experts warn of new attack vectors.', ts: 14 },
-            { topic: 'science', title: 'Mars Rover Discovers Organic Compounds', summary: 'Evidence of past habitability strengthens.', ts: 12 },
-            { topic: 'science', title: 'Gene Therapy Cures Rare Childhood Disease', summary: 'Clinical trial results exceed expectations.', ts: 13 },
-            { topic: 'science', title: 'Ocean Temperatures Hit Record High', summary: 'Scientists track accelerating climate changes.', ts: 15 },
-            { topic: 'science', title: 'Dark Matter Detection Experiment Yields Results', summary: 'Physicists observe anomalous signal.', ts: 18 },
-            { topic: 'sports', title: 'Championship Finals Set for Saturday', summary: 'Underdogs advance in dramatic semi-final.', ts: 16 },
-            { topic: 'sports', title: 'Olympic Committee Announces New Sports', summary: 'Esports and breaking join 2028 games.', ts: 17 },
-            { topic: 'sports', title: 'Record Transfer Fee Shakes Football World', summary: 'Star player moves in $300M deal.', ts: 19 },
-            { topic: 'entertainment', title: 'Streaming Wars Heat Up with New Platform', summary: 'Tech company enters competitive market.', ts: 20 },
-            { topic: 'entertainment', title: 'Award-Winning Director Returns with Epic', summary: 'Highly anticipated sequel breaks pre-sale records.', ts: 21 },
-            { topic: 'entertainment', title: 'Viral TikTok Trend Sparks Cultural Debate', summary: 'Millions participate in controversial challenge.', ts: 22 },
-            { topic: 'health', title: 'New Study Links Diet to Mental Health', summary: 'Mediterranean diet shows cognitive benefits.', ts: 23 },
-            { topic: 'health', title: 'Meditation App Downloads Triple', summary: 'Wellness trend drives digital health market.', ts: 24 },
-            { topic: 'health', title: 'Vaccine Development Accelerates for New Variant', summary: 'Pharmaceutical companies race to update formulations.', ts: 25 },
-            { topic: 'business', title: 'Startup Unicorn Raises $500M Series D', summary: 'AI company valuation reaches $5B.', ts: 26 },
-            { topic: 'business', title: 'Stock Market Hits All-Time High', summary: 'Tech sector leads broad market rally.', ts: 27 },
-            { topic: 'business', title: 'Remote Work Policies Become Permanent', summary: 'Major corporations abandon return-to-office plans.', ts: 28 },
-        ];
-
-        // Social Network — 5 friend personas
+        // Social network: five fictional friends, each following a few topics
+        // and reposting from one side. They pass on stories that match both.
         const FRIENDS = [
-            { name: 'Alex', bias: { tech: 3, science: 2, business: 1.5 }, color: '#8b5cf6' },
-            { name: 'Jordan', bias: { politics_left: 3, health: 2, science: 1 }, color: '#3b82f6' },
-            { name: 'Casey', bias: { sports: 3, entertainment: 2 }, color: '#f59e0b' },
-            { name: 'Morgan', bias: { politics_right: 3, business: 2 }, color: '#ef4444' },
-            { name: 'Riley', bias: { entertainment: 2, health: 2, tech: 1 }, color: '#ec4899' },
+            { name: 'Alex',   lean: 'center', bias: { tech: 3, economy: 2, education: 1.5 } },
+            { name: 'Jordan', lean: 'left',   bias: { environment: 3, health: 2, immigration: 1 } },
+            { name: 'Casey',  lean: 'center', bias: { sports: 3, education: 1 } },
+            { name: 'Morgan', lean: 'right',  bias: { guns: 3, immigration: 2, economy: 1.5 } },
+            { name: 'Riley',  lean: 'left',   bias: { health: 2, education: 2, tech: 1 } },
         ];
 
         // State
         let userInterests = {};
+        let leanInterests = {};
         let currentStep = 0;
         let diversityHistory = [];
         let simpsonHistory = [];
@@ -292,9 +339,37 @@
         let currentFeed = [];
         let autoRunInterval = null;
 
+        // Engagement signals: how much each action adds to the topic's interest.
+        // Read (a click) and Run Step's +0.35 are the values the week-5 board
+        // works by hand; like and repost are stronger signals on top. The same
+        // amount goes to the story's lean, kept as a second, separate profile.
+        const SIGNAL = { read: 0.5, like: 1.0, share: 1.5 };
+        // How much the engagement score rewards your leaning side, on top of
+        // the topic term. Zero while your three leans are equal. At 0.2 one
+        // read moves about one more story of that side into the next eight.
+        const LEAN_WEIGHT = 0.2;
+        // Everything else a ranker weighs (recency, the story's own pull), drawn at random.
+        const NOISE = 0.1;
+        // Stories scored per step. Ranking all 288 at once would let a tiny
+        // score gap take every one of the eight slots; a batch of 28 (the
+        // size of the simulator's original pool) keeps one click a nudge.
+        const CANDIDATES = 28;
+        // A repost reaches your friends, who pass that topic back to you: a
+        // boost to the topic's score that fades each step.
+        const SHARE_ECHO = 0.25, SHARE_ECHO_DECAY = 0.6;
+        let liked = new Set(), shared = new Set();   // article indices
+        let tally = {};                               // topic -> { read, like, share }
+        let shareEcho = {};                           // topic -> score boost
+        let previousFeed = new Set();                 // shown last step: not shown again
+        let reposts = new Map();                      // article index -> friend who reposted it
+        let echoes = new Map();                       // article index -> { friend, boost } after your repost
+
         function initSimulation() {
-            Object.keys(TOPICS).forEach(t => { userInterests[t] = 1; });
+            Object.keys(TOPICS).forEach(t => { userInterests[t] = 1; tally[t] = { read: 0, like: 0, share: 0 }; shareEcho[t] = 0; });
+            Object.keys(LEANS).forEach(l => { leanInterests[l] = 1; });
+            liked = new Set(); shared = new Set(); previousFeed = new Set();
             currentStep = 0;
+            setNote('Your timeline starts with every topic and every side equal. <b>Read</b>, <b>like</b> or <b>repost</b> a story, or press <b>Run Step</b>, and watch what the algorithm learns.');
             diversityHistory = [];
             simpsonHistory = [];
             giniHistory = [];
@@ -305,6 +380,8 @@
             updateCharts();
         }
 
+        const leanShare = l => leanInterests[l] / Object.values(leanInterests).reduce((s, v) => s + v, 0);
+
         function generateFeed() {
             const mode = document.getElementById('algoMode').value;
             const engWeight = parseInt(document.getElementById('engagementWeight').value) / 100;
@@ -313,30 +390,62 @@
 
             const totalInterest = Object.values(userInterests).reduce((s, v) => s + v, 0);
 
-            // Social network boost: friends share articles matching their biases
+            // Chronological: newest first, eight at a time; each step moves on
+            // through time. Nothing about you is used.
+            if (mode === 'chronological') {
+                const byDate = ARTICLES.map((a, i) => ({ ...a, idx: i })).sort((a, b) => b.date.localeCompare(a.date));
+                const start = (currentStep * 8) % byDate.length;
+                currentFeed = byDate.slice(start, start + 8);
+                renderFeed();
+                return;
+            }
+
+            // Stage 1, candidates: a batch of stories you have not just seen, as a
+            // real recommender first retrieves a few dozen candidates. Stage 2
+            // scores them and shows the top eight.
+            // In engagement mode retrieval is personal too: a story is fetched in
+            // proportion to your share of its topic and of its side.
+            const unseen = ARTICLES.map((a, i) => ({ ...a, idx: i })).filter(a => !previousFeed.has(a.idx));
+            const weight = a => mode === 'engagement' ? Math.sqrt(profileShare(a.topic) * leanShare(a.lean)) : 1;
+            const fresh = unseen.map(a => ({ a, k: Math.pow(Math.random(), 1 / weight(a)) }))   // weighted draw without replacement
+                .sort((x, y) => y.k - x.k).slice(0, CANDIDATES).map(x => x.a);
+            // Social boost: each friend reposts one story a step, from their own
+            // side and a topic they follow (weighted by how much they follow it).
+            // Homophily is how much the algorithm favours what your friends post.
+            reposts = new Map();
+            if (homophily > 0) FRIENDS.forEach(f => {
+                const pool = fresh.filter(a => a.lean === f.lean && f.bias[a.topic] && !reposts.has(a.idx));
+                let r = Math.random() * pool.reduce((s, a) => s + f.bias[a.topic], 0);
+                const pick = pool.find(a => (r -= f.bias[a.topic]) <= 0);
+                if (pick) reposts.set(pick.idx, f);
+            });
+            // After your repost, friends who follow that topic each pass one of
+            // its stories back to you, from their own side (two at most); the
+            // push fades each step.
+            echoes = new Map();
+            const shuffled = unseen.map(a => [Math.random(), a]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+            Object.keys(shareEcho).forEach(t => {
+                if (shareEcho[t] < 0.05) return;
+                FRIENDS.filter(f => f.bias[t]).slice(0, 2).forEach(f => {
+                    const a = shuffled.find(a => a.topic === t && a.lean === f.lean && !reposts.has(a.idx) && !echoes.has(a.idx));
+                    if (!a) return;
+                    echoes.set(a.idx, { friend: f, boost: shareEcho[t] });
+                    if (!fresh.includes(a)) fresh.push(a);
+                });
+            });
             const socialBoost = {};
-            ARTICLES.forEach((a, i) => {
-                let boost = 0;
-                FRIENDS.forEach(f => { boost += (f.bias[a.topic] || 0) * homophily * 0.1; });
-                socialBoost[i] = boost;
+            fresh.forEach(a => {
+                const f = reposts.get(a.idx), e = echoes.get(a.idx);
+                socialBoost[a.idx] = (f ? f.bias[a.topic] * homophily * 0.1 : 0) + (e ? e.boost : 0);
             });
 
             let scores;
-            if (mode === 'chronological') {
-                // Chronological: just reverse timestamp order with small random noise
-                scores = ARTICLES.map((a, i) => ({
-                    ...a, idx: i,
-                    score: a.ts / ARTICLES.length + Math.random() * 0.05
-                }));
-                scores.sort((a, b) => b.score - a.score);
-            } else if (mode === 'diversity') {
-                // Diversity-aware: strongly boost underrepresented topics
-                const topicCounts = {};
-                scores = ARTICLES.map((a, i) => {
+            if (mode === 'diversity') {
+                // Diversity-aware: strongly boost underrepresented topics and sides
+                scores = fresh.map(a => {
                     const interest = userInterests[a.topic] / totalInterest;
-                    const diversityBoost = (1 - interest) * 0.8;
-                    topicCounts[a.topic] = (topicCounts[a.topic] || 0);
-                    return { ...a, idx: i, score: diversityBoost + interest * 0.2 + socialBoost[i] * 0.3 + Math.random() * 0.15 };
+                    const diversityBoost = (1 - interest) * 0.8 + (1 / 3 - leanShare(a.lean)) * 0.5;
+                    return { ...a, score: diversityBoost + interest * 0.2 + socialBoost[a.idx] * 0.3 + Math.random() * 0.15 };
                 });
                 scores.sort((a, b) => b.score - a.score);
                 // Ensure at least 1 article per topic in top 8
@@ -352,60 +461,131 @@
                 currentFeed = picked;
                 renderFeed();
                 return;
-            } else {
-                // Engagement-optimized (default)
-                scores = ARTICLES.map((a, i) => {
-                    const interest = userInterests[a.topic] / totalInterest;
-                    const engScore = interest * engWeight;
-                    const divScore = (1 - interest) * divFactor;
-                    return { ...a, idx: i, score: engScore + divScore + socialBoost[i] + Math.random() * 0.1 };
-                });
-                scores.sort((a, b) => b.score - a.score);
             }
 
+            // Engagement-optimised (default)
+            scores = fresh.map(a => {
+                const interest = userInterests[a.topic] / totalInterest;
+                const engScore = interest * engWeight;
+                const divScore = (1 - interest) * divFactor;
+                const leanScore = (leanShare(a.lean) - 1 / 3) * engWeight * LEAN_WEIGHT;
+                return { ...a, score: engScore + divScore + leanScore + socialBoost[a.idx] + Math.random() * NOISE };
+            });
+            scores.sort((a, b) => b.score - a.score);
             currentFeed = scores.slice(0, 8);
             renderFeed();
         }
 
-        function renderFeed() {
-            const container = document.getElementById('feedContainer');
-            container.innerHTML = currentFeed.map((article, i) => {
-                const topic = TOPICS[article.topic];
-                // Check if any friend shared this article
-                const homophilyNow = parseInt(document.getElementById('homophily').value) / 100;
-                const sharedBy = homophilyNow < 0.15 ? []
-                    : FRIENDS.filter(f => (f.bias[article.topic] || 0) * homophilyNow >= 0.6);
-                const sharedTag = sharedBy.length > 0
-                    ? `<span class="text-xs text-slate-400 ml-2">shared by ${sharedBy[0].name}</span>` : '';
-                return `<div class="feed-card p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 hover:border-primary/30 transition-all cursor-pointer" onclick="engageArticle('${article.topic}', ${i})" style="animation-delay: ${i * 50}ms">
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background: ${topic.color}20">
-                        <span class="material-icons-outlined" aria-hidden="true" style="color: ${topic.color}">${topic.icon}</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-medium px-2 py-0.5 rounded-full" style="background: ${topic.color}20; color: ${topic.color}">${topic.label}</span>
-                            ${sharedTag}
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">${article.title}</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">${article.summary}</p>
-                    </div>
-                    <div class="flex flex-col items-center gap-1 text-slate-400" aria-hidden="true">
-                        <span class="material-icons-outlined text-lg">favorite_border</span>
-                        <span class="material-icons-outlined text-lg">share</span>
-                    </div>
-                </div>
-            </div>`;
-            }).join('');
+        function friendFor(topic, lean) {
+            const pool = FRIENDS.filter(f => !lean || f.lean === lean);
+            return (pool.length ? pool : FRIENDS).slice().sort((a, b) => (b.bias[topic] || 0) - (a.bias[topic] || 0))[0];
         }
 
-        function engageArticle(topic) {
-            applyEngagement([topic], 0.5);
+        // Why this story is in your timeline, as X shows a repost: one line
+        // above the post, with an icon. Empty when nothing personal put it there.
+        function whyShown(article) {
+            const t = tally[article.topic], label = TOPICS[article.topic].label;
+            if (document.getElementById('algoMode').value === 'chronological') return null;
+            if (echoes.has(article.idx)) return { icon: 'repeat', text: `${echoes.get(article.idx).friend.name} reposted, after your repost` };
+            if (t.share + t.like > 0) {
+                if (t.like && t.share) return { icon: 'favorite', text: `Because you liked and reposted ${label} stories` };
+                const k = t.like || t.share, verb = t.like ? 'liked' : 'reposted';
+                return { icon: t.like ? 'favorite' : 'repeat', text: `Because you ${verb} ${k === 1 ? 'a' : k} ${label} ${k === 1 ? 'story' : 'stories'}` };
+            }
+            if (reposts.has(article.idx)) return { icon: 'repeat', text: `${reposts.get(article.idx).name} reposted` };
+            return null;
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feedContainer');
+            const showLean = document.getElementById('showLean').checked;
+            container.innerHTML = currentFeed.map((a, i) => {
+                const topic = TOPICS[a.topic];
+                const why = whyShown(a);
+                const isLiked = liked.has(a.idx), isShared = shared.has(a.idx);
+                const title = esc(a.title);
+                return `<article class="fb-item" onclick="if (!event.target.closest('button, a')) engageArticle(${a.idx}, 'read')" style="animation-delay: ${i * 40}ms">
+                ${why ? `<p class="fb-context"><span class="material-icons-outlined" aria-hidden="true">${why.icon}</span>${esc(why.text)}</p>` : ''}
+                <div class="fb-row">
+                    <span class="fb-avatar" aria-hidden="true">${esc(monogram(a.outlet))}</span>
+                    <div class="fb-body">
+                        <p class="fb-head"><span class="fb-name">${esc(a.outlet)}</span>
+                            <span class="fb-handle">${esc(a.domain)} · <time datetime="${esc(a.date)}">${fmtDate(a.date)}</time></span>
+                            ${showLean ? `<span class="fb-lean fb-lean-${a.lean}" title="AllSides rating: ${LEANS[a.lean]}">${LEANS[a.lean]}</span>` : ''}</p>
+                        <h3><button type="button" class="fb-text" onclick="engageArticle(${a.idx}, 'read')"
+                            title="Read: +${SIGNAL.read} to ${esc(topic.label)}">${title}</button></h3>
+                        <a class="fb-card" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer"
+                           title="Open the original article (not counted as engagement)">
+                            <span class="fb-card-meta"><span class="fb-swatch" style="background: ${topic.color}" aria-hidden="true"></span>${esc(topic.label)} · ${esc(a.domain)}<span class="material-icons-outlined" aria-hidden="true">open_in_new</span></span>
+                            ${a.excerpt ? `<span class="fb-card-text">${esc(a.excerpt)}</span>` : ''}
+                        </a>
+                        <div class="fb-actions">
+                            <button type="button" class="fb-act" onclick="engageArticle(${a.idx}, 'read')"
+                                title="Read: +${SIGNAL.read} to ${esc(topic.label)}" aria-label="Read “${title}”">
+                                <span class="material-icons-outlined" aria-hidden="true">visibility</span>Read</button>
+                            <button type="button" class="fb-act is-share" aria-pressed="${isShared}" onclick="engageArticle(${a.idx}, 'share')"
+                                title="${isShared ? 'Reposted' : `Repost: +${SIGNAL.share} to ${esc(topic.label)}, and your friends pass it back`}" aria-label="Repost “${title}”">
+                                <span class="material-icons-outlined" aria-hidden="true">repeat</span>${isShared ? 'Reposted' : 'Repost'}</button>
+                            <button type="button" class="fb-act is-like" aria-pressed="${isLiked}" onclick="engageArticle(${a.idx}, 'like')"
+                                title="${isLiked ? 'Liked' : `Like: +${SIGNAL.like} to ${esc(topic.label)}`}" aria-label="Like “${title}”">
+                                <span class="material-icons-outlined" aria-hidden="true">${isLiked ? 'favorite' : 'favorite_border'}</span>${isLiked ? 'Liked' : 'Like'}</button>
+                        </div>
+                    </div>
+                </div>
+            </article>`;
+            }).join('');
+            container.scrollTop = 0;
+        }
+
+        // ------------------------------------------------- what just happened
+        const profileShare = t => userInterests[t] / Object.values(userInterests).reduce((s, v) => s + v, 0);
+        const feedCount = t => currentFeed.filter(a => a.topic === t).length;
+        const feedLean = l => currentFeed.filter(a => a.lean === l).length;
+        const pct = x => (x * 100).toFixed(1) + '%';
+        function setNote(html) { document.getElementById('engageNote').innerHTML = html; }
+        function snapshot() {
+            const o = { lean: {} };
+            Object.keys(TOPICS).forEach(t => { o[t] = { share: profileShare(t), feed: feedCount(t) }; });
+            Object.keys(LEANS).forEach(l => { o.lean[l] = { share: leanShare(l), feed: feedLean(l) }; });
+            return o;
+        }
+        function topicDelta(before, t) {
+            const label = TOPICS[t].label, b = before[t];
+            const feedNow = feedCount(t);
+            const feedText = feedNow === b.feed ? `still ${feedNow} of 8 stories` : `<b>${feedNow} of 8</b> stories (was ${b.feed})`;
+            return `<b>${label}</b> <span class="delta">${pct(b.share)} → ${pct(profileShare(t))}</span> of your profile; next feed: ${feedText}.`;
+        }
+        function leanDelta(before, l) {
+            const b = before.lean[l], now = feedLean(l);
+            return ` <b>${LEANS[l]}</b>-rated outlets <span class="delta">${pct(b.share)} → ${pct(leanShare(l))}</span> of what you engage with; ${now === b.feed ? `still ${now}` : `<b>${now}</b> (was ${b.feed})`} of 8 in the next feed.`;
+        }
+        // advance one step: everything after the profile has changed
+        function afterEngagement() {
+            Object.keys(shareEcho).forEach(t => { shareEcho[t] *= SHARE_ECHO_DECAY; });
+            previousFeed = new Set(currentFeed.map(a => a.idx));
             currentStep++;
             generateFeed();
             renderUserProfile();
             updateMetrics();
             updateCharts();
+        }
+
+        function engageArticle(idx, kind) {
+            const article = ARTICLES[idx], t = article.topic;
+            if (kind === 'like' && liked.has(idx)) return;
+            if (kind === 'share' && shared.has(idx)) return;
+            const before = snapshot();
+            applyEngagement([t], SIGNAL[kind]);
+            applyLean([article.lean], SIGNAL[kind]);
+            tally[t][kind]++;
+            if (kind === 'like') liked.add(idx);
+            if (kind === 'share') { shared.add(idx); shareEcho[t] += SHARE_ECHO / SHARE_ECHO_DECAY; }
+            afterEngagement();
+            const verb = { read: 'You read', like: 'You liked', share: 'You reposted' }[kind];
+            const icon = { read: 'visibility', like: 'favorite', share: 'repeat' }[kind];
+            setNote(`<span class="material-icons-outlined fb-ico" aria-hidden="true">${icon}</span>
+                ${verb} “${esc(article.title)}” (${esc(article.outlet)}), a signal of <b>+${SIGNAL[kind]}</b>.
+                ${kind === 'share' ? `${friendFor(t).name} and others will pass ${TOPICS[t].label} back to you for a few steps. ` : ''}${topicDelta(before, t)}${leanDelta(before, article.lean)}`);
         }
 
         // Engagement raises the clicked topics and decays everything else.
@@ -420,31 +600,44 @@
             });
             topics.forEach(t => { userInterests[t] = (userInterests[t] || INTEREST_FLOOR) + amount; });
         }
+        // The same rule for the second profile: which side you engage with.
+        function applyLean(leans, amount) {
+            Object.keys(leanInterests).forEach(l => {
+                leanInterests[l] = Math.max(INTEREST_FLOOR, leanInterests[l] * INTEREST_DECAY);
+            });
+            leans.forEach(l => { leanInterests[l] += amount; });
+        }
 
         function breakBubble() {
-            // Inject cross-cutting content: boost all underrepresented topics
-            const total = Object.values(userInterests).reduce((s, v) => s + v, 0);
-            const avg = total / Object.keys(TOPICS).length;
-            Object.keys(userInterests).forEach(t => {
-                if (userInterests[t] < avg) userInterests[t] = avg * 1.2;
-            });
-            currentStep++;
-            generateFeed();
-            renderUserProfile();
-            updateMetrics();
-            updateCharts();
+            // Inject cross-cutting content: boost all underrepresented topics and sides
+            const level = obj => {
+                const avg = Object.values(obj).reduce((s, v) => s + v, 0) / Object.keys(obj).length;
+                Object.keys(obj).forEach(k => { if (obj[k] < avg) obj[k] = avg * 1.2; });
+            };
+            level(userInterests);
+            level(leanInterests);
+            const topicsBefore = new Set(currentFeed.map(a => a.topic)).size;
+            afterEngagement();
+            const topicsNow = new Set(currentFeed.map(a => a.topic)).size;
+            setNote(`<span class="material-icons-outlined fb-ico" aria-hidden="true">diversity_3</span>
+                <b>Break the Bubble</b> raised every topic and side below average to 1.2 × the average. Your next feed covers
+                <b>${topicsNow}</b> of 8 topics (was ${topicsBefore}). Keep engaging and see how fast it narrows again.`);
         }
 
         function runStep() {
             // Simulate: user "engages" with top 2-3 articles
             const topArticles = currentFeed.slice(0, 2 + Math.floor(Math.random() * 2));
+            const before = snapshot();
             applyEngagement(topArticles.map(a => a.topic), 0.35);
-
-            currentStep++;
-            generateFeed();
-            renderUserProfile();
-            updateMetrics();
-            updateCharts();
+            applyLean(topArticles.map(a => a.lean), 0.35);
+            topArticles.forEach(a => { tally[a.topic].read++; });
+            afterEngagement();
+            // report the topic that gained most
+            const topics = [...new Set(topArticles.map(a => a.topic))];
+            const top = topics.sort((a, b) => (profileShare(b) - before[b].share) - (profileShare(a) - before[a].share))[0];
+            setNote(`<span class="material-icons-outlined fb-ico" aria-hidden="true">skip_next</span>
+                <b>Run Step:</b> a simulated user read the top ${topArticles.length} stories
+                (${topArticles.map(a => TOPICS[a.topic].label).join(', ')}), <b>+0.35</b> each. ${topicDelta(before, top)}`);
         }
 
         function autoRun() {
@@ -484,6 +677,20 @@
                     <div class="h-full rounded-full transition-all" style="width: ${pct}%; background: ${topic.color}"></div>
                 </div>
                 <span class="text-xs text-slate-500 text-right tabular-nums">${pct}%</span>
+                <span class="text-[0.68rem] text-slate-400 tabular-nums whitespace-nowrap" title="Your likes and reposts of ${topic.label}">${
+                    (tally[key].like ? `<span class="material-icons-outlined fb-ico fb-ico-sm" aria-hidden="true">favorite</span>${tally[key].like} ` : '') +
+                    (tally[key].share ? `<span class="material-icons-outlined fb-ico fb-ico-sm" aria-hidden="true">repeat</span>${tally[key].share}` : '')}</span>
+            </div>`;
+            }).join('');
+            // second profile: which side you engage with
+            document.getElementById('leanProfile').innerHTML = Object.entries(LEANS).map(([l, label]) => {
+                const share = (leanShare(l) * 100).toFixed(1);
+                return `<div class="contents">
+                <span class="text-xs">${label}</span>
+                <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div class="h-full rounded-full transition-all fb-lean-bar-${l}" style="width: ${share}%"></div>
+                </div>
+                <span class="text-xs text-slate-500 text-right tabular-nums">${share}%</span><span></span>
             </div>`;
             }).join('');
         }
@@ -543,6 +750,14 @@
             document.getElementById('echoLevel').className = `font-bold ${echoColor}`;
             document.getElementById('diversityScore').className = `font-bold ${echoColor}`;
             document.getElementById('diversityBar').className = `h-full rounded-full ${barColor} transition-all`;
+
+            // the side of the outlets in this feed
+            document.getElementById('feedLean').innerHTML = Object.keys(LEANS).map(l => {
+                const n = feedLean(l);
+                return n ? `<span class="fb-lean-bar-${l}" style="flex: ${n}" title="${LEANS[l]}: ${n} of 8"></span>` : '';
+            }).join('');
+            document.getElementById('feedLeanText').textContent =
+                Object.keys(LEANS).map(l => `${LEANS[l]} ${feedLean(l)}`).join(' · ');
         }
 
         function updateCharts() {
@@ -580,10 +795,22 @@
             }, { responsive: true, displayModeBar: false });
         }
 
-        initSimulation();
+        fetch('../data/news-feed.json?v=3.6.0')
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+            .then(data => {
+                TOPICS = Object.fromEntries(Object.entries(data.topics).map(([k, label]) =>
+                    [k, { label, color: (TOPIC_STYLE[k] || {}).color || '#64748b' }]));
+                ARTICLES = data.posts;
+                initSimulation();
+            })
+            .catch(err => {
+                document.getElementById('feedContainer').innerHTML =
+                    `<p class="p-4 text-sm text-red-600">Could not load the stories (${esc(err.message)}). Reload the page to try again.</p>`;
+            });
+        document.getElementById('showLean').addEventListener('change', () => { if (ARTICLES.length) renderFeed(); });
     </script>
-    <script src="../shared/session.js?v=3.5.0"></script>
-    <script src="../shared/toolkit.js?v=3.5.0"></script>
+    <script src="../shared/session.js?v=3.6.0"></script>
+    <script src="../shared/toolkit.js?v=3.6.0"></script>
     <script>
         Toolkit.mountShell({ active: 'filter-bubble' });
         ToolkitSession.maybeOfferConsent();

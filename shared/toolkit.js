@@ -182,7 +182,7 @@
         'safety': 'Safety'
     };
 
-    const VERSION = '3.5.0';
+    const VERSION = '3.6.0';
 
     // Pages live either at the repo root or one level down in /tools.
     const inToolsDir = /\/tools\//.test(global.location.pathname);
@@ -204,16 +204,27 @@
                class="flex items-center px-3 py-2 rounded-lg text-sm transition-colors group ${isActive
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark-lighter hover:text-slate-900 dark:hover:text-white'}">
-                <span class="material-icons-outlined mr-3 text-lg ${isActive ? '' : 'group-hover:text-primary transition-colors'}"
+                <span class="nav-icon material-icons-outlined mr-3 text-lg ${isActive ? '' : 'group-hover:text-primary transition-colors'}"
                       aria-hidden="true">${icon}</span>
-                <span>${esc(label)}</span>${extra}
+                <span class="nav-label">${esc(label)}</span>${extra}
             </a>`;
 
         return `
         <div class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity opacity-0" id="mobileOverlay" hidden></div>
+        <div id="navEdge" aria-hidden="true">
+            <button type="button" id="navReveal" tabindex="-1" title="Show the sidebar ( [ )">
+                <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.4"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/>
+                    <path d="M7 3.5v13"/>
+                    <path class="nav-reveal-arrow" d="M10.75 7.75 13 10l-2.25 2.25"/>
+                </svg>
+            </button>
+        </div>
         <aside id="sidebar" aria-label="Toolkit navigation"
             class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0">
             <div class="h-20 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
+                <a href="${base}index.html" class="nav-mini" aria-hidden="true" tabindex="-1">&amp;</a>
                 <a href="${base}index.html" class="wordmark" aria-label="AI and Data Ethics Toolkit, home">
                     <span class="wm-line" aria-hidden="true">AI <span class="wm-amp">&amp;</span> Data Ethics</span>
                     <span class="wm-sub" aria-hidden="true">Toolkit</span>
@@ -225,17 +236,26 @@
             </div>
             <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1" aria-label="Tools">
                 ${item(base + 'index.html', 'grid_view', 'All tools', active === 'overview')}
-                <div class="pt-4 pb-2 px-3">
+                <div class="nav-section pt-4 pb-2 px-3">
                     <h2 class="eyebrow">Labs, in course order</h2>
                 </div>
                 ${TOOLS.map(t => item(toolHref(t), t.icon, t.short, active === t.id,
-                    `<span class="ml-auto pl-2 text-xs tabular-nums text-slate-400">${esc(t.lab.replace(/^Labs? /, '').replace(/^Project /, 'P'))}</span>`)).join('')}
+                    `<span class="nav-num ml-auto pl-2 text-xs tabular-nums text-slate-400">${esc(t.lab.replace(/^Labs? /, '').replace(/^Project /, 'P'))}</span>`)).join('')}
             </nav>
-            <div class="border-t border-slate-200 dark:border-slate-800 p-4">
-                <p class="text-xs text-slate-400 mb-2">© 2026
+            <div class="nav-foot border-t border-slate-200 dark:border-slate-800 p-4">
+                <div class="nav-modes" role="group" aria-label="Sidebar">
+                    <span class="nav-modes-label">Sidebar</span>
+                    <button type="button" data-nav-mode="full" title="Full sidebar ( [ cycles )">Full</button>
+                    <button type="button" data-nav-mode="compact" title="Icons only; hover to see names ( [ cycles )">Icons</button>
+                    <button type="button" data-nav-mode="hidden" title="Hidden; hover the left edge to show it ( [ cycles )">Hide</button>
+                </div>
+                <button type="button" class="nav-expand" data-nav-mode="full" title="Show the full sidebar ( [ )" aria-label="Show the full sidebar">
+                    <span class="material-icons-outlined" aria-hidden="true">keyboard_double_arrow_right</span>
+                </button>
+                <p class="nav-credit text-xs text-slate-400 mb-2">© 2026
                     <a href="https://hamedyaghoobian.com" class="text-primary hover:underline"
                        target="_blank" rel="noopener">Hamed Yaghoobian</a></p>
-                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div class="nav-credit flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                     <span>Version ${VERSION}</span>
                     <a class="hover:text-primary transition-colors" href="${base}legal.html">Legal</a>
                 </div>
@@ -289,6 +309,72 @@
             openBtn.setAttribute('aria-expanded', 'false');
             openBtn.setAttribute('aria-controls', 'sidebar');
         }
+    }
+
+    // Desktop sidebar modes. 'full' is the old fixed sidebar; 'compact' is an
+    // icon rail with lab numbers; 'hidden' leaves a thin edge with a menu
+    // button. In both collapsed modes the full sidebar slides over the page
+    // (it does not push it) while the pointer is on the rail or edge, while
+    // focus is inside it, or after a click until you click elsewhere. The mode
+    // is remembered (the <head> script applies it before first paint), and the
+    // [ key cycles through the three. Phones keep the slide-in menu.
+    const NAV_MODES = ['full', 'compact', 'hidden'];
+    function wireNavModes() {
+        const root = document.documentElement;
+        const sidebar = document.getElementById('sidebar');
+        const edge = document.getElementById('navEdge');
+        if (!sidebar || !edge) return;
+        const desktop = global.matchMedia('(min-width: 768px)');
+        if (!NAV_MODES.includes(root.dataset.nav)) root.dataset.nav = 'full';
+
+        let timer = 0, pinned = false;
+        const peek = (on, delay = 0) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                if (!on) pinned = false;
+                sidebar.classList.toggle('is-peek', on && root.dataset.nav !== 'full');
+            }, delay);
+        };
+        function setMode(mode) {
+            root.dataset.nav = mode;
+            try { localStorage.setItem('ethicsToolkitNav', mode); } catch (e) { }
+            sidebar.classList.remove('is-peek');
+            pinned = false;
+            sidebar.querySelectorAll('.nav-modes [data-nav-mode]').forEach(b =>
+                b.setAttribute('aria-pressed', String(b.dataset.navMode === mode)));
+        }
+        setMode(root.dataset.nav);
+
+        sidebar.querySelectorAll('[data-nav-mode]').forEach(b =>
+            b.addEventListener('click', () => setMode(b.dataset.navMode)));
+
+        // hover: only a real pointer, with a short delay so passing by does nothing
+        const enter = e => { if (e.pointerType === 'mouse' && desktop.matches) peek(true, 120); };
+        sidebar.addEventListener('pointerenter', e => { if (root.dataset.nav === 'compact') enter(e); else peek(true); });
+        edge.addEventListener('pointerenter', enter);
+        sidebar.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !pinned) peek(false, 250); });
+        edge.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !pinned) peek(false, 250); });
+
+        // click or tap: open until a click elsewhere or Escape
+        document.getElementById('navReveal').addEventListener('click', () => { peek(true); pinned = true; });
+        sidebar.addEventListener('click', e => {
+            if (root.dataset.nav === 'compact' && !sidebar.classList.contains('is-peek') && !e.target.closest('a,button')) {
+                peek(true); pinned = true;
+            }
+        });
+        document.addEventListener('pointerdown', e => {
+            if (pinned && !sidebar.contains(e.target) && !edge.contains(e.target)) peek(false);
+        });
+
+        // keyboard: tabbing into the rail opens it, tabbing out closes it
+        sidebar.addEventListener('focusin', () => { if (desktop.matches) peek(true); });
+        sidebar.addEventListener('focusout', e => { if (!sidebar.contains(e.relatedTarget) && !pinned) peek(false); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && sidebar.classList.contains('is-peek')) { peek(false); return; }
+            if (e.key !== '[' || e.metaKey || e.ctrlKey || e.altKey || !desktop.matches) return;
+            if (e.target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return;
+            setMode(NAV_MODES[(NAV_MODES.indexOf(root.dataset.nav) + 1) % NAV_MODES.length]);
+        });
     }
 
     // The head script owns initial paint; this only wires the toggle control.
@@ -425,7 +511,10 @@
     function mountShell(options = {}) {
         const { active = null } = options;
 
-        document.body.insertAdjacentHTML('afterbegin', sidebarMarkup(active));
+        // after the skip link, so that stays the first tab stop
+        const skip = document.querySelector('body > .skip-link');
+        if (skip) skip.insertAdjacentHTML('afterend', sidebarMarkup(active));
+        else document.body.insertAdjacentHTML('afterbegin', sidebarMarkup(active));
 
         const main = document.querySelector('main');
         if (main && !main.querySelector('footer')) {
@@ -433,6 +522,7 @@
         }
 
         wireMobileMenu();
+        wireNavModes();
         wireThemeToggle();
         mountQuestion(active);
         installChartTheme();

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>User Guide | AI &amp; Data Ethics Toolkit</title>
-    <link rel="stylesheet" href="shared/tailwind.css?v=3.5.0" />
+    <link rel="stylesheet" href="shared/tailwind.css?v=3.6.0" />
     <script>
         // Paint the theme before first render. Until the student chooses one,
         // follow the operating system's light/dark preference (and keep
@@ -20,6 +20,8 @@
             }
             var s = saved();
             apply(s ? s === 'dark' : !!(mq && mq.matches));
+            // sidebar mode (full, compact or hidden), set before first paint like the theme
+            try { root.setAttribute('data-nav', localStorage.getItem('ethicsToolkitNav') || 'full'); } catch (e) { root.setAttribute('data-nav', 'full'); }
             if (mq && mq.addEventListener) {
                 mq.addEventListener('change', function (e) {
                     if (!saved()) {
@@ -34,8 +36,8 @@
             };
         })();
     </script>
-    <link rel="stylesheet" href="shared/toolkit.css?v=3.5.0" />
-    <link rel="icon" href="shared/favicon.svg?v=3.5.0" type="image/svg+xml">
+    <link rel="stylesheet" href="shared/toolkit.css?v=3.6.0" />
+    <link rel="icon" href="shared/favicon.svg?v=3.6.0" type="image/svg+xml">
 </head>
 
 <body
@@ -158,16 +160,16 @@
                 <p class="tool-question mt-1" data-tool="filter-bubble"></p>
                 <dl class="mt-4 grid sm:grid-cols-[9rem_1fr] gap-x-6 gap-y-3 text-sm text-slate-700 dark:text-slate-300">
                     <dt class="font-semibold text-slate-900 dark:text-slate-100">What it runs on</dt>
-                    <dd>A fixed pool of 28 articles across 8 topics, and five simulated friends whose interests pull on yours.</dd>
+                    <dd>288 real headlines (2012–2020) from about 35 US outlets, across 8 topics and labelled left, center or right by AllSides (Article-Bias-Prediction dataset), and five simulated friends whose interests and sides pull on yours. Each step the algorithm fetches 28 candidate stories, scores them and shows the top eight.</dd>
                     <dt class="font-semibold text-slate-900 dark:text-slate-100">How to use it</dt>
                     <dd><ol class="list-decimal pl-5 space-y-1.5">
                         <li>Set <strong>Engagement Weight</strong>, <strong>Diversity Factor</strong> and <strong>Homophily</strong>, and pick an <strong>Algorithm Mode</strong>.</li>
                         <li>Press <strong>Run Step</strong>, or the play button to run up to 100 steps on its own.</li>
-                        <li>Click a card in the feed to engage with its topic, and watch the feed adjust.</li>
+                        <li>Read (click), like or repost a story: each is a stronger signal for its topic and its side (+0.5, +1.0, +1.5), and a repost also comes back through your friends. The note above the timeline says what each action changed.</li>
                         <li>Compare against <strong>Chronological (control)</strong>, or press <strong>Break the Bubble</strong>.</li>
                     </ol></dd>
                     <dt class="font-semibold text-slate-900 dark:text-slate-100">What it measures</dt>
-                    <dd>Diversity score and echo-chamber level; Shannon entropy, Simpson index and Gini coefficient over time; topic distribution.</dd>
+                    <dd>Diversity score and echo-chamber level; Shannon entropy, Simpson index and Gini coefficient over time; topic distribution; and how many of the eight stories come from left-, center- and right-rated outlets.</dd>
                     <dt class="font-semibold text-slate-900 dark:text-slate-100">Saving your work</dt>
                     <dd>No export.</dd>
                 </dl>
@@ -318,8 +320,8 @@
 
     </main>
 
-    <script src="shared/session.js?v=3.5.0"></script>
-    <script src="shared/toolkit.js?v=3.5.0"></script>
+    <script src="shared/session.js?v=3.6.0"></script>
+    <script src="shared/toolkit.js?v=3.6.0"></script>
     <script>
         Toolkit.mountShell({ active: null });
         document.querySelectorAll('.tool-question[data-tool]').forEach(el => {

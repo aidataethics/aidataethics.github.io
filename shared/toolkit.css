@@ -269,3 +269,73 @@ input[type="range"] { accent-color: rgb(var(--c-accent)); }
 .wm-sub   { margin-top: 0.4rem; font-family: 'IBM Plex Sans', sans-serif;
             font-size: 0.66rem; font-weight: 600; letter-spacing: 0.32em;
             text-transform: uppercase; color: rgb(var(--n-500)); }
+
+/* ---------------------------------------------------------- sidebar modes
+   Desktop only (phones keep the slide-in menu). html[data-nav] is set before
+   first paint by each page's <head> script and changed by toolkit.js:
+     full     the 16rem sidebar, pushing the page
+     compact  a 4.5rem rail of icons and lab numbers
+     hidden   a thin edge with a menu button
+   In the two collapsed modes, .is-peek slides the full sidebar over the page
+   without moving it. */
+#navEdge, .nav-mini, .nav-expand { display: none; }
+
+.nav-modes { display: flex; align-items: center; gap: 0.15rem; margin-bottom: 0.75rem;
+             font-size: 0.72rem; }
+.nav-modes-label { margin-right: auto; color: rgb(var(--n-500)); font-weight: 600;
+                   letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.66rem; }
+.nav-modes button { padding: 0.15rem 0.5rem; border-radius: 999px; color: rgb(var(--n-500));
+                    transition: background-color 0.15s ease, color 0.15s ease; }
+.nav-modes button:hover { color: rgb(var(--c-text)); background: rgb(var(--c-text) / 0.06); }
+.nav-modes button[aria-pressed="true"] { color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.1);
+                                          font-weight: 600; }
+
+@media (min-width: 768px) {
+    #sidebar { transition: transform 0.25s ease, width 0.2s ease, box-shadow 0.2s ease; overflow-x: hidden; }
+    #sidebar .nav-label, #sidebar .eyebrow { white-space: nowrap; }
+    #main { transition: margin-left 0.2s ease; }
+
+    html[data-nav="compact"] #main { margin-left: 4.5rem; }
+    html[data-nav="hidden"] #main { margin-left: 2.5rem; }
+
+    /* a peeking sidebar floats over the page */
+    #sidebar.is-peek { box-shadow: 0 0 0 1px rgb(var(--c-text) / 0.06), 12px 0 32px -12px rgb(0 0 0 / 0.25); }
+
+    /* compact: the rail */
+    html[data-nav="compact"] #sidebar:not(.is-peek) { width: 4.5rem; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .wordmark,
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-label,
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-modes,
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-credit { display: none; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) > div:first-child { justify-content: center; padding: 0; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-mini {
+        display: block; font-family: 'Toolkit Amp', Newsreader, Georgia, serif; font-style: italic;
+        font-size: 2.4rem; line-height: 1; color: rgb(var(--c-accent)); text-decoration: none; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) nav { padding-left: 0.5rem; padding-right: 0.5rem; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) nav a {
+        flex-direction: column; justify-content: center; gap: 0.1rem; padding: 0.45rem 0; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-icon { margin-right: 0; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-num { margin: 0; padding: 0; font-size: 0.62rem; line-height: 1; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-section { padding: 0.6rem 0.75rem; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-section .eyebrow { display: none; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-section::after {
+        content: ''; display: block; border-top: 1px solid rgb(var(--c-text) / 0.12); }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-foot { display: flex; justify-content: center; padding: 0.75rem 0; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-expand {
+        display: inline-flex; padding: 0.3rem; border-radius: 0.5rem; color: rgb(var(--n-500)); }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-expand:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-text) / 0.06); }
+
+    /* hidden: an edge to hover, with a menu button for touch and click */
+    html[data-nav="hidden"] #sidebar:not(.is-peek) { transform: translateX(-100%); }
+    html[data-nav="hidden"] #navEdge {
+        display: block; position: fixed; inset: 0 auto 0 0; width: 2.5rem; z-index: 45;
+        border-right: 1px solid rgb(var(--c-text) / 0.1); background: rgb(var(--c-paper)); }
+    #navReveal { margin: 1.4rem 0 0 0.45rem; padding: 0.3rem; border-radius: 0.5rem; color: rgb(var(--n-500));
+                 display: inline-flex; transition: color 0.15s ease, background-color 0.15s ease; }
+    #navReveal:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-text) / 0.06); }
+    /* a panel with its sidebar column; the arrow nudges out on hover */
+    .nav-reveal-arrow { transition: transform 0.2s ease; }
+    #navEdge:hover .nav-reveal-arrow { transform: translateX(1.5px); }
+}
+
+@media print { #navEdge { display: none !important; } }
