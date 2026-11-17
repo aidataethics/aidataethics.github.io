@@ -182,7 +182,7 @@
         'safety': 'Safety'
     };
 
-    const VERSION = '3.6.1';
+    const VERSION = '3.7.0';
 
     // Pages live either at the repo root or one level down in /tools.
     const inToolsDir = /\/tools\//.test(global.location.pathname);
@@ -198,14 +198,11 @@
     // ---------------------------------------------------------------- shell
 
     function sidebarMarkup(active) {
+        // Items are styled in toolkit.css (.nav-item), where the sidebar's
+        // corner and density options can reach them.
         const item = (href, icon, label, isActive, extra = '') => `
-            <a href="${href}"
-               ${isActive ? 'aria-current="page"' : ''}
-               class="flex items-center px-3 py-2 rounded-lg text-sm transition-colors group ${isActive
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark-lighter hover:text-slate-900 dark:hover:text-white'}">
-                <span class="nav-icon material-icons-outlined mr-3 text-lg ${isActive ? '' : 'group-hover:text-primary transition-colors'}"
-                      aria-hidden="true">${icon}</span>
+            <a href="${href}" class="nav-item" ${isActive ? 'aria-current="page"' : ''}>
+                <span class="nav-icon material-icons-outlined" aria-hidden="true">${icon}</span>
                 <span class="nav-label">${esc(label)}</span>${extra}
             </a>`;
 
@@ -223,42 +220,42 @@
         </div>
         <aside id="sidebar" aria-label="Toolkit navigation"
             class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0">
-            <div class="h-20 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
+            <div class="nav-head h-20 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
                 <a href="${base}index.html" class="nav-mini" aria-hidden="true" tabindex="-1">&amp;</a>
                 <a href="${base}index.html" class="wordmark" aria-label="AI and Data Ethics Toolkit, home">
                     <span class="wm-line" aria-hidden="true">AI <span class="wm-amp">&amp;</span> Data Ethics</span>
                     <span class="wm-sub" aria-hidden="true">Toolkit</span>
                 </a>
+                <button type="button" class="nav-collapse nav-btn" data-nav-mode="compact"
+                    title="Collapse to icons ( [ )" aria-label="Collapse the sidebar to icons">
+                    <span class="material-icons-outlined" aria-hidden="true">keyboard_double_arrow_left</span>
+                </button>
                 <button id="closeSidebar" type="button" aria-label="Close navigation"
                     class="md:hidden text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                     <span class="material-icons-outlined" aria-hidden="true">close</span>
                 </button>
             </div>
-            <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1" aria-label="Tools">
+            <nav class="nav-list flex-1 overflow-y-auto" aria-label="Tools">
                 ${item(base + 'index.html', 'grid_view', 'All tools', active === 'overview')}
-                <div class="nav-section pt-4 pb-2 px-3">
+                <div class="nav-section">
                     <h2 class="eyebrow">Labs, in course order</h2>
                 </div>
                 ${TOOLS.map(t => item(toolHref(t), t.icon, t.short, active === t.id,
-                    `<span class="nav-num ml-auto pl-2 text-xs tabular-nums text-slate-400">${esc(t.lab.replace(/^Labs? /, '').replace(/^Project /, 'P'))}</span>`)).join('')}
+                    `<span class="nav-num">${esc(t.lab.replace(/^Labs? /, '').replace(/^Project /, 'P'))}</span>`)).join('')}
             </nav>
-            <div class="nav-foot border-t border-slate-200 dark:border-slate-800 p-4">
-                <div class="nav-modes" role="group" aria-label="Sidebar">
-                    <span class="nav-modes-label">Sidebar</span>
-                    <button type="button" data-nav-mode="full" title="Full sidebar ( [ cycles )">Full</button>
-                    <button type="button" data-nav-mode="compact" title="Icons only; hover to see names ( [ cycles )">Icons</button>
-                    <button type="button" data-nav-mode="hidden" title="Hidden; hover the left edge to show it ( [ cycles )">Hide</button>
+            <div class="nav-foot">
+                <div class="nav-foot-row">
+                    <p class="nav-credit">Version ${VERSION} · <a href="${base}legal.html">Legal</a></p>
+                    <button type="button" class="nav-btn nav-expand" data-nav-mode="full"
+                        title="Show the full sidebar ( [ )" aria-label="Show the full sidebar">
+                        <span class="material-icons-outlined" aria-hidden="true">keyboard_double_arrow_right</span>
+                    </button>
+                    <button type="button" class="nav-btn nav-tune" aria-haspopup="dialog" aria-expanded="false"
+                        aria-controls="navLook" title="Customize the sidebar" aria-label="Customize the sidebar">
+                        <span class="material-icons-outlined" aria-hidden="true">tune</span>
+                    </button>
                 </div>
-                <button type="button" class="nav-expand" data-nav-mode="full" title="Show the full sidebar ( [ )" aria-label="Show the full sidebar">
-                    <span class="material-icons-outlined" aria-hidden="true">keyboard_double_arrow_right</span>
-                </button>
-                <p class="nav-credit text-xs text-slate-400 mb-2">© 2026
-                    <a href="https://hamedyaghoobian.com" class="text-primary hover:underline"
-                       target="_blank" rel="noopener">Hamed Yaghoobian</a></p>
-                <div class="nav-credit flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>Version ${VERSION}</span>
-                    <a class="hover:text-primary transition-colors" href="${base}legal.html">Legal</a>
-                </div>
+                <p class="nav-credit">© 2026 <a href="https://hamedyaghoobian.com" target="_blank" rel="noopener">Hamed Yaghoobian</a></p>
             </div>
         </aside>`;
     }
@@ -319,6 +316,31 @@
     // is remembered (the <head> script applies it before first paint), and the
     // [ key cycles through the three. Phones keep the slide-in menu.
     const NAV_MODES = ['full', 'compact', 'hidden'];
+    // Appearance options, remembered together and applied before first paint
+    // by the <head> script as html[data-nav-style|corners|density].
+    const NAV_LOOK = [
+        { key: 'layout', label: 'Layout', options: [['full', 'Full'], ['compact', 'Icons'], ['hidden', 'Hidden']],
+          hint: 'Icons and Hidden open on hover. The [ key cycles them.' },
+        { key: 'style', label: 'Style', options: [['flush', 'Flush'], ['floating', 'Floating']],
+          hint: 'Floating sets the sidebar in from the edge, as a card.' },
+        { key: 'corners', label: 'Corners', options: [['square', 'Square'], ['soft', 'Soft'], ['round', 'Round']] },
+        { key: 'density', label: 'Density', options: [['comfortable', 'Comfortable'], ['compact', 'Compact']] },
+    ];
+    const NAV_LOOK_DEFAULT = { style: 'flush', corners: 'soft', density: 'comfortable' };
+    function navLook() {
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem('ethicsToolkitNavLook') || '{}') || {}; } catch (e) { }
+        return Object.assign({}, NAV_LOOK_DEFAULT, saved);
+    }
+    function lookControls(prefix) {
+        return NAV_LOOK.map(g => `
+            <div class="nav-look-group" role="group" aria-labelledby="${prefix}-${g.key}">
+                <p class="nav-look-label" id="${prefix}-${g.key}">${g.label}</p>
+                <div class="nav-seg">${g.options.map(([v, l]) =>
+                    `<button type="button" data-look="${g.key}" data-value="${v}" aria-pressed="false">${l}</button>`).join('')}</div>
+                ${g.hint ? `<p class="nav-look-hint">${g.hint}</p>` : ''}
+            </div>`).join('');
+    }
     function wireNavModes() {
         const root = document.documentElement;
         const sidebar = document.getElementById('sidebar');
@@ -346,11 +368,85 @@
             try { localStorage.setItem('ethicsToolkitNav', mode); } catch (e) { }
             sidebar.classList.remove('is-peek');
             pinned = false;
-            sidebar.querySelectorAll('.nav-modes [data-nav-mode]').forEach(b =>
-                b.setAttribute('aria-pressed', String(b.dataset.navMode === mode)));
+            syncLook();
         }
-        setMode(root.dataset.nav, false);
 
+        function setLook(key, value) {
+            if (key === 'layout') { setMode(value); return; }
+            const look = navLook();
+            look[key] = value;
+            try { localStorage.setItem('ethicsToolkitNavLook', JSON.stringify(look)); } catch (e) { }
+            root.classList.add('nav-anim');
+            clearTimeout(animTimer);
+            animTimer = setTimeout(() => root.classList.remove('nav-anim'), 350);
+            root.setAttribute('data-nav-' + key, value);
+            syncLook();
+        }
+        function syncLook() {
+            const look = Object.assign(navLook(), { layout: root.dataset.nav });
+            document.querySelectorAll('[data-look]').forEach(b =>
+                b.setAttribute('aria-pressed', String(look[b.dataset.look] === b.dataset.value)));
+        }
+        const applied = navLook();
+        ['style', 'corners', 'density'].forEach(k => root.setAttribute('data-nav-' + k, applied[k]));
+
+        // the Customize panel: outside the sidebar, so it is never clipped or
+        // hidden with it, and placed just right of whatever space the sidebar keeps
+        const panel = document.createElement('div');
+        panel.id = 'navLook';
+        panel.className = 'nav-look';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-label', 'Customize the sidebar');
+        panel.hidden = true;
+        panel.innerHTML = `<div class="nav-look-top"><p class="nav-look-title">Sidebar</p>
+            <button type="button" class="nav-btn" data-look-close aria-label="Close">
+                <span class="material-icons-outlined" aria-hidden="true">close</span></button></div>
+            ${lookControls('navlook')}
+            <button type="button" class="nav-look-reset" data-look-reset>Reset to default</button>`;
+        document.body.appendChild(panel);
+        const settings = document.getElementById('navLookSettings');   // the same controls on settings.html
+        if (settings) settings.innerHTML = lookControls('navlook-settings');
+
+        const tune = sidebar.querySelector('.nav-tune');
+        function place() {
+            // the page's margin is the space the sidebar keeps; read its final
+            // value, not one caught partway through a transition
+            const main = document.getElementById('main');
+            let left = 0;
+            if (desktop.matches && main) {
+                const t = main.style.transition;
+                main.style.transition = 'none';
+                left = parseFloat(getComputedStyle(main).marginLeft) || 0;
+                main.style.transition = t;
+            }
+            panel.style.left = desktop.matches ? `${left + 12}px` : '';
+        }
+        function openPanel(open) {
+            panel.hidden = !open;
+            tune.setAttribute('aria-expanded', String(open));
+            if (!open) return;
+            place();
+            panel.querySelector('[aria-pressed="true"]')?.focus();
+        }
+        tune.addEventListener('click', e => { e.stopPropagation(); openPanel(panel.hidden); });
+        panel.querySelector('[data-look-close]').addEventListener('click', () => { openPanel(false); tune.focus(); });
+        panel.querySelector('[data-look-reset]').addEventListener('click', () => {
+            try { localStorage.removeItem('ethicsToolkitNavLook'); } catch (e) { }
+            Object.entries(NAV_LOOK_DEFAULT).forEach(([k, v]) => root.setAttribute('data-nav-' + k, v));
+            setMode('full');
+        });
+        document.addEventListener('pointerdown', e => {
+            if (!panel.hidden && !panel.contains(e.target) && !tune.contains(e.target)) openPanel(false);
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && !panel.hidden) { openPanel(false); tune.focus(); }
+        });
+        document.addEventListener('click', e => {
+            const b = e.target.closest('[data-look]');
+            if (b) { setLook(b.dataset.look, b.dataset.value); if (!panel.hidden) place(); }
+        });
+
+        setMode(root.dataset.nav, false);
         sidebar.querySelectorAll('[data-nav-mode]').forEach(b =>
             b.addEventListener('click', () => setMode(b.dataset.navMode)));
 

@@ -270,34 +270,120 @@ input[type="range"] { accent-color: rgb(var(--c-accent)); }
             font-size: 0.66rem; font-weight: 600; letter-spacing: 0.32em;
             text-transform: uppercase; color: rgb(var(--n-500)); }
 
-/* ---------------------------------------------------------- sidebar modes
-   Desktop only (phones keep the slide-in menu). html[data-nav] is set before
-   first paint by each page's <head> script and changed by toolkit.js:
-     full     the 16rem sidebar, pushing the page
-     compact  a 4.5rem rail of icons and lab numbers
-     hidden   a thin edge with a menu button
-   In the two collapsed modes, .is-peek slides the full sidebar over the page
-   without moving it. */
+/* ---------------------------------------------------------------- sidebar
+   Items, header and footer are styled here rather than with utilities, so the
+   appearance options can reach them. Options live on <html>, set before first
+   paint by each page's <head> script and changed by toolkit.js:
+     data-nav          full | compact (icon rail) | hidden (edge)     desktop only
+     data-nav-style    flush | floating (inset card)                  desktop only
+     data-nav-corners  square | soft | round
+     data-nav-density  comfortable | compact
+   In the two collapsed layouts, .is-peek slides the full sidebar over the page
+   without moving it. Phones keep the slide-in menu. */
+:root {
+    --nav-item-r: 0.55rem;   /* corners of an item; soft by default */
+    --nav-card-r: 0.9rem;    /* corners of the floating card */
+    --nav-pad-y: 0.5rem;     /* item height; comfortable by default */
+    --nav-inset: 0.75rem;    /* the floating card's gap from the window edge */
+}
+html[data-nav-corners="square"] { --nav-item-r: 0.15rem; --nav-card-r: 0.2rem; }
+html[data-nav-corners="round"]  { --nav-item-r: 999px;   --nav-card-r: 1.5rem; }
+html[data-nav-density="compact"] { --nav-pad-y: 0.3rem; }
+
+/* list and items */
+.nav-list { padding: 1.1rem 0.75rem; display: flex; flex-direction: column; gap: 2px; }
+html[data-nav-density="compact"] .nav-list { padding-top: 0.75rem; gap: 0; }
+.nav-item { position: relative; display: flex; align-items: center; gap: 0.7rem;
+            padding: var(--nav-pad-y) 0.7rem; border-radius: var(--nav-item-r);
+            font-size: 0.875rem; color: rgb(var(--c-text) / 0.72); text-decoration: none;
+            transition: background-color 0.15s ease, color 0.15s ease; }
+.nav-item:hover { background: rgb(var(--c-text) / 0.05); color: rgb(var(--c-text)); }
+.nav-icon { font-size: 1.15rem !important; color: rgb(var(--n-500)); transition: color 0.15s ease; }
+.nav-item:hover .nav-icon { color: rgb(var(--c-accent)); }
+.nav-item[aria-current="page"] { background: rgb(var(--c-accent) / 0.1); color: rgb(var(--c-accent)); font-weight: 600; }
+.nav-item[aria-current="page"] .nav-icon { color: rgb(var(--c-accent)); }
+/* square corners mark the current page with a rule at the edge instead of a fill alone */
+html[data-nav-corners="square"] .nav-item[aria-current="page"]::before {
+    content: ''; position: absolute; left: 0; top: 0.35rem; bottom: 0.35rem; width: 3px;
+    background: rgb(var(--c-accent)); border-radius: 0 2px 2px 0; }
+.nav-num { margin-left: auto; min-width: 1.6rem; text-align: right; font-size: 0.72rem; font-weight: 500;
+           font-variant-numeric: tabular-nums; color: rgb(var(--n-400)); }
+.nav-item[aria-current="page"] .nav-num { color: rgb(var(--c-accent) / 0.8); }
+.nav-section { padding: 1rem 0.7rem 0.4rem; }
+html[data-nav-density="compact"] .nav-section { padding-top: 0.7rem; padding-bottom: 0.25rem; }
+
+/* small icon buttons in the header, footer and panel */
+.nav-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.3rem;
+           border-radius: min(var(--nav-item-r), 0.6rem); color: rgb(var(--n-500));
+           transition: color 0.15s ease, background-color 0.15s ease; }
+html[data-nav-corners="round"] .nav-btn { border-radius: 999px; }
+.nav-btn:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-text) / 0.06); }
+.nav-btn .material-icons-outlined { font-size: 1.15rem; }
+.nav-tune[aria-expanded="true"] { color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.1); }
+.nav-collapse { display: none; }
+
+/* footer */
+.nav-foot { border-top: 1px solid rgb(var(--c-text) / 0.1); padding: 0.6rem 0.75rem 0.85rem 1.1rem; }
+.nav-foot-row { display: flex; align-items: center; gap: 0.25rem; }
+.nav-foot-row .nav-credit { margin-right: auto; }
+.nav-credit { font-size: 0.72rem; color: rgb(var(--n-500)); white-space: nowrap; }
+.nav-credit a { color: inherit; text-decoration: none; }
+.nav-credit a:hover { color: rgb(var(--c-accent)); text-decoration: underline; }
+
+/* the Customize panel */
+.nav-look { position: fixed; z-index: 60; bottom: 0.75rem; left: 0.75rem; width: 17.5rem;
+            max-height: calc(100vh - 1.5rem); overflow-y: auto; padding: 0.9rem 1rem 1rem;
+            background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-text) / 0.12);
+            border-radius: var(--nav-card-r); box-shadow: 0 12px 40px -12px rgb(0 0 0 / 0.3);
+            animation: navLookIn 0.15s ease-out; }
+.nav-look[hidden] { display: none; }
+@keyframes navLookIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.nav-look-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
+.nav-look-title { font-family: Newsreader, Georgia, serif; font-weight: 600; font-size: 1.05rem; }
+.nav-look-group { margin-top: 0.75rem; }
+.nav-look-label { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+                  color: rgb(var(--n-500)); margin-bottom: 0.35rem; }
+.nav-look-hint { margin-top: 0.3rem; font-size: 0.72rem; line-height: 1.4; color: rgb(var(--n-500)); }
+.nav-seg { display: flex; padding: 3px; gap: 2px; border-radius: min(var(--nav-item-r), 0.7rem);
+           background: rgb(var(--c-text) / 0.06); }
+html[data-nav-corners="round"] .nav-seg { border-radius: 999px; }
+.nav-seg button { flex: 1; padding: 0.3rem 0.4rem; font-size: 0.78rem; color: rgb(var(--c-text) / 0.7);
+                  border-radius: max(calc(min(var(--nav-item-r), 0.7rem) - 2px), 0.1rem);
+                  transition: background-color 0.15s ease, color 0.15s ease; }
+html[data-nav-corners="round"] .nav-seg button { border-radius: 999px; }
+.nav-seg button:hover { color: rgb(var(--c-text)); }
+.nav-seg button[aria-pressed="true"] { background: rgb(var(--c-surface)); color: rgb(var(--c-accent)); font-weight: 600;
+                                       box-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(var(--c-text) / 0.06); }
+.dark .nav-seg button[aria-pressed="true"] { background: rgb(var(--c-surface-2)); }
+.nav-look-reset { margin-top: 0.9rem; font-size: 0.75rem; color: rgb(var(--n-500)); text-decoration: underline;
+                  text-underline-offset: 3px; }
+.nav-look-reset:hover { color: rgb(var(--c-accent)); }
+/* on the settings page the same controls sit in a card */
+#navLookSettings .nav-look-group:first-child { margin-top: 0; }
+#navLookSettings .nav-seg { max-width: 22rem; }
+
 #navEdge, .nav-mini, .nav-expand { display: none; }
 
-.nav-modes { display: flex; align-items: center; gap: 0.15rem; margin-bottom: 0.75rem;
-             font-size: 0.72rem; }
-.nav-modes-label { margin-right: auto; color: rgb(var(--n-500)); font-weight: 600;
-                   letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.66rem; }
-.nav-modes button { padding: 0.15rem 0.5rem; border-radius: 999px; color: rgb(var(--n-500));
-                    transition: background-color 0.15s ease, color 0.15s ease; }
-.nav-modes button:hover { color: rgb(var(--c-text)); background: rgb(var(--c-text) / 0.06); }
-.nav-modes button[aria-pressed="true"] { color: rgb(var(--c-accent)); background: rgb(var(--c-accent) / 0.1);
-                                          font-weight: 600; }
-
 @media (min-width: 768px) {
-    #sidebar { transition: transform 0.25s ease, width 0.2s ease, box-shadow 0.2s ease; overflow-x: hidden; }
-    #sidebar .nav-label, #sidebar .eyebrow { white-space: nowrap; }
-    /* only while the mode is being switched: a resize must not animate the page */
+    #sidebar { transition: transform 0.25s ease, width 0.2s ease, box-shadow 0.2s ease,
+                           top 0.2s ease, bottom 0.2s ease, left 0.2s ease, border-radius 0.2s ease; overflow-x: hidden; }
+    #sidebar .nav-label, #sidebar .eyebrow, #sidebar .nav-credit { white-space: nowrap; }
+    .nav-collapse { display: inline-flex; }
+    /* only while an option is being switched: a resize must not animate the page */
     html.nav-anim #main { transition: margin-left 0.2s ease; }
 
     html[data-nav="compact"] #main { margin-left: 4.5rem; }
     html[data-nav="hidden"] #main { margin-left: 2.5rem; }
+
+    /* floating: the sidebar becomes a card set in from the window's edge */
+    html[data-nav-style="floating"] #sidebar {
+        top: var(--nav-inset); bottom: var(--nav-inset); left: var(--nav-inset); overflow: hidden;
+        border: 1px solid rgb(var(--c-text) / 0.1); border-radius: var(--nav-card-r);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 10px 30px -14px rgb(0 0 0 / 0.22); }
+    html[data-nav-style="floating"] #main { margin-left: calc(16rem + 2 * var(--nav-inset)); }
+    html[data-nav-style="floating"][data-nav="compact"] #main { margin-left: calc(4.5rem + 2 * var(--nav-inset)); }
+    html[data-nav-style="floating"][data-nav="hidden"] #sidebar:not(.is-peek) { transform: translateX(calc(-100% - 2 * var(--nav-inset))); }
+    html[data-nav-style="floating"] .nav-head { border-bottom-color: rgb(var(--c-text) / 0.08); }
 
     /* a peeking sidebar floats over the page */
     #sidebar.is-peek { box-shadow: 0 0 0 1px rgb(var(--c-text) / 0.06), 12px 0 32px -12px rgb(0 0 0 / 0.25); }
@@ -306,32 +392,32 @@ input[type="range"] { accent-color: rgb(var(--c-accent)); }
     html[data-nav="compact"] #sidebar:not(.is-peek) { width: 4.5rem; }
     html[data-nav="compact"] #sidebar:not(.is-peek) .wordmark,
     html[data-nav="compact"] #sidebar:not(.is-peek) .nav-label,
-    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-modes,
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-collapse,
     html[data-nav="compact"] #sidebar:not(.is-peek) .nav-credit { display: none; }
-    html[data-nav="compact"] #sidebar:not(.is-peek) > div:first-child { justify-content: center; padding: 0; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-head { justify-content: center; padding: 0; }
     html[data-nav="compact"] #sidebar:not(.is-peek) .nav-mini {
         display: block; font-family: 'Toolkit Amp', Newsreader, Georgia, serif; font-style: italic;
         font-size: 2.4rem; line-height: 1; color: rgb(var(--c-accent)); text-decoration: none; }
-    html[data-nav="compact"] #sidebar:not(.is-peek) nav { padding-left: 0.5rem; padding-right: 0.5rem; }
-    html[data-nav="compact"] #sidebar:not(.is-peek) nav a {
-        flex-direction: column; justify-content: center; gap: 0.1rem; padding: 0.45rem 0; }
-    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-icon { margin-right: 0; }
-    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-num { margin: 0; padding: 0; font-size: 0.62rem; line-height: 1; }
-    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-section { padding: 0.6rem 0.75rem; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-list { padding-left: 0.5rem; padding-right: 0.5rem; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-item {
+        flex-direction: column; justify-content: center; gap: 0.15rem; padding: 0.45rem 0; }
+    html[data-nav="compact"][data-nav-corners="round"] #sidebar:not(.is-peek) .nav-item { border-radius: 1rem; }
+    html[data-nav="compact"][data-nav-corners="square"] #sidebar:not(.is-peek) .nav-item[aria-current="page"]::before { left: -0.5rem; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-num { margin: 0; min-width: 0; text-align: center; font-size: 0.62rem; line-height: 1; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-section { padding: 0.6rem 0.5rem; }
     html[data-nav="compact"] #sidebar:not(.is-peek) .nav-section .eyebrow { display: none; }
     html[data-nav="compact"] #sidebar:not(.is-peek) .nav-section::after {
         content: ''; display: block; border-top: 1px solid rgb(var(--c-text) / 0.12); }
-    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-foot { display: flex; justify-content: center; padding: 0.75rem 0; }
-    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-expand {
-        display: inline-flex; padding: 0.3rem; border-radius: 0.5rem; color: rgb(var(--n-500)); }
-    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-expand:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-text) / 0.06); }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-foot { padding: 0.6rem 0; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-foot-row { flex-direction: column; gap: 0.2rem; }
+    html[data-nav="compact"] #sidebar:not(.is-peek) .nav-expand { display: inline-flex; }
 
-    /* hidden: an edge to hover, with a menu button for touch and click */
+    /* hidden: an edge to hover, with a button for touch and click */
     html[data-nav="hidden"] #sidebar:not(.is-peek) { transform: translateX(-100%); }
     html[data-nav="hidden"] #navEdge {
         display: block; position: fixed; inset: 0 auto 0 0; width: 2.5rem; z-index: 45;
         border-right: 1px solid rgb(var(--c-text) / 0.1); background: rgb(var(--c-paper)); }
-    #navReveal { margin: 1.4rem 0 0 0.45rem; padding: 0.3rem; border-radius: 0.5rem; color: rgb(var(--n-500));
+    #navReveal { margin: 1.4rem 0 0 0.45rem; padding: 0.3rem; border-radius: min(var(--nav-item-r), 0.6rem); color: rgb(var(--n-500));
                  display: inline-flex; transition: color 0.15s ease, background-color 0.15s ease; }
     #navReveal:hover { color: rgb(var(--c-accent)); background: rgb(var(--c-text) / 0.06); }
     /* a panel with its sidebar column; the arrow nudges out on hover */
@@ -339,4 +425,4 @@ input[type="range"] { accent-color: rgb(var(--c-accent)); }
     #navEdge:hover .nav-reveal-arrow { transform: translateX(1.5px); }
 }
 
-@media print { #navEdge { display: none !important; } }
+@media print { #navEdge, .nav-look { display: none !important; } }
