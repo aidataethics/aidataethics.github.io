@@ -4,7 +4,7 @@
 // Messages in:  check · load {part} · generate {request} · forget {id} · stop · clear
 // Messages out: device {error} · cached {parts} · progress {...} · text {piece}
 //               · frame {count} · done {result} · error {message}
-import { OmniModel, cachedParts, clearDownloads } from '../shared/omni-model.js?v=3.7.0';
+import { OmniModel, cachedParts, clearDownloads } from '../shared/omni-model.js?v=3.7.1';
 
 const model = new OmniModel({ onProgress: p => self.postMessage({ type: 'progress', ...p }) });
 let busy = false;

@@ -182,7 +182,7 @@
         'safety': 'Safety'
     };
 
-    const VERSION = '3.7.0';
+    const VERSION = '3.7.1';
 
     // Pages live either at the repo root or one level down in /tools.
     const inToolsDir = /\/tools\//.test(global.location.pathname);
@@ -208,8 +208,8 @@
 
         return `
         <div class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity opacity-0" id="mobileOverlay" hidden></div>
-        <div id="navEdge" aria-hidden="true">
-            <button type="button" id="navReveal" tabindex="-1" title="Show the sidebar ( [ )">
+        <div id="navEdge">
+            <button type="button" id="navReveal" title="Show the sidebar ( [ )" aria-label="Show the sidebar">
                 <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.4"
                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/>
@@ -220,7 +220,7 @@
         </div>
         <aside id="sidebar" aria-label="Toolkit navigation"
             class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0">
-            <div class="nav-head h-20 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
+            <div class="nav-head h-20 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
                 <a href="${base}index.html" class="nav-mini" aria-hidden="true" tabindex="-1">&amp;</a>
                 <a href="${base}index.html" class="wordmark" aria-label="AI and Data Ethics Toolkit, home">
                     <span class="wm-line" aria-hidden="true">AI <span class="wm-amp">&amp;</span> Data Ethics</span>
@@ -320,9 +320,9 @@
     // by the <head> script as html[data-nav-style|corners|density].
     const NAV_LOOK = [
         { key: 'layout', label: 'Layout', options: [['full', 'Full'], ['compact', 'Icons'], ['hidden', 'Hidden']],
-          hint: 'Icons and Hidden open on hover. The [ key cycles them.' },
+          hint: 'Icons and Hidden open on hover. The [ key cycles them.', desktop: true },
         { key: 'style', label: 'Style', options: [['flush', 'Flush'], ['floating', 'Floating']],
-          hint: 'Floating sets the sidebar in from the edge, as a card.' },
+          hint: 'Floating sets the sidebar in from the edge, as a card.', desktop: true },
         { key: 'corners', label: 'Corners', options: [['square', 'Square'], ['soft', 'Soft'], ['round', 'Round']] },
         { key: 'density', label: 'Density', options: [['comfortable', 'Comfortable'], ['compact', 'Compact']] },
     ];
@@ -330,15 +330,21 @@
     function navLook() {
         let saved = {};
         try { saved = JSON.parse(localStorage.getItem('ethicsToolkitNavLook') || '{}') || {}; } catch (e) { }
-        return Object.assign({}, NAV_LOOK_DEFAULT, saved);
+        // keep only values that are real options, so a stale or damaged entry cannot stick
+        const look = Object.assign({}, NAV_LOOK_DEFAULT);
+        NAV_LOOK.forEach(g => {
+            if (g.key in look && saved && g.options.some(([v]) => v === saved[g.key])) look[g.key] = saved[g.key];
+        });
+        return look;
     }
     function lookControls(prefix) {
         return NAV_LOOK.map(g => `
-            <div class="nav-look-group" role="group" aria-labelledby="${prefix}-${g.key}">
+            <div class="nav-look-group" role="group" aria-labelledby="${prefix}-${g.key}"
+                 ${g.hint ? `aria-describedby="${prefix}-${g.key}-hint"` : ''} ${g.desktop ? 'data-desktop-only' : ''}>
                 <p class="nav-look-label" id="${prefix}-${g.key}">${g.label}</p>
                 <div class="nav-seg">${g.options.map(([v, l]) =>
-                    `<button type="button" data-look="${g.key}" data-value="${v}" aria-pressed="false">${l}</button>`).join('')}</div>
-                ${g.hint ? `<p class="nav-look-hint">${g.hint}</p>` : ''}
+                    `<button type="button" data-look="${g.key}" data-value="${v}" aria-pressed="false"${g.key === 'layout' ? ' aria-keyshortcuts="["' : ''}>${l}</button>`).join('')}</div>
+                ${g.hint ? `<p class="nav-look-hint" id="${prefix}-${g.key}-hint">${g.hint}</p>` : ''}
             </div>`).join('');
     }
     function wireNavModes() {
@@ -349,7 +355,7 @@
         const desktop = global.matchMedia('(min-width: 768px)');
         if (!NAV_MODES.includes(root.dataset.nav)) root.dataset.nav = 'full';
 
-        let timer = 0, pinned = false;
+        let timer = 0, pinned = false, panel = null;
         const peek = (on, delay = 0) => {
             clearTimeout(timer);
             timer = setTimeout(() => {
@@ -368,8 +374,17 @@
             try { localStorage.setItem('ethicsToolkitNav', mode); } catch (e) { }
             sidebar.classList.remove('is-peek');
             pinned = false;
+            // the header button collapses a full sidebar and restores a collapsed one
+            const full = mode === 'full';
+            toggle.dataset.navMode = full ? 'compact' : 'full';
+            toggle.setAttribute('aria-label', full ? 'Collapse the sidebar to icons' : 'Show the full sidebar');
+            toggle.title = full ? 'Collapse to icons ( [ )' : 'Show the full sidebar ( [ )';
+            toggle.querySelector('.material-icons-outlined').textContent =
+                full ? 'keyboard_double_arrow_left' : 'keyboard_double_arrow_right';
             syncLook();
+            if (panel && !panel.hidden) place();
         }
+        const toggle = sidebar.querySelector('.nav-collapse');
 
         function setLook(key, value) {
             if (key === 'layout') { setMode(value); return; }
@@ -392,7 +407,7 @@
 
         // the Customize panel: outside the sidebar, so it is never clipped or
         // hidden with it, and placed just right of whatever space the sidebar keeps
-        const panel = document.createElement('div');
+        panel = document.createElement('div');
         panel.id = 'navLook';
         panel.className = 'nav-look';
         panel.setAttribute('role', 'dialog');
@@ -403,7 +418,7 @@
                 <span class="material-icons-outlined" aria-hidden="true">close</span></button></div>
             ${lookControls('navlook')}
             <button type="button" class="nav-look-reset" data-look-reset>Reset to default</button>`;
-        document.body.appendChild(panel);
+        sidebar.after(panel);   // straight after the sidebar in the tab order
         const settings = document.getElementById('navLookSettings');   // the same controls on settings.html
         if (settings) settings.innerHTML = lookControls('navlook-settings');
 
@@ -418,16 +433,27 @@
                 main.style.transition = 'none';
                 left = parseFloat(getComputedStyle(main).marginLeft) || 0;
                 main.style.transition = t;
+                // an open (peeking) sidebar is wider than the space it keeps
+                if (sidebar.classList.contains('is-peek')) left = Math.max(left, sidebar.getBoundingClientRect().right);
             }
             panel.style.left = desktop.matches ? `${left + 12}px` : '';
         }
         function openPanel(open) {
             panel.hidden = !open;
             tune.setAttribute('aria-expanded', String(open));
-            if (!open) return;
+            if (!open) {
+                // let a sidebar held open for the panel close again
+                if (pinned && !sidebar.matches(':hover') && !sidebar.contains(document.activeElement)) peek(false);
+                return;
+            }
+            // keep a peeking sidebar open while it is being customized
+            if (sidebar.classList.contains('is-peek')) pinned = true;
             place();
-            panel.querySelector('[aria-pressed="true"]')?.focus();
+            panel.querySelector('[aria-pressed="true"]:not([hidden])')?.focus();
         }
+        panel.addEventListener('focusout', e => {
+            if (e.relatedTarget && !panel.contains(e.relatedTarget) && e.relatedTarget !== tune) openPanel(false);
+        });
         tune.addEventListener('click', e => { e.stopPropagation(); openPanel(panel.hidden); });
         panel.querySelector('[data-look-close]').addEventListener('click', () => { openPanel(false); tune.focus(); });
         panel.querySelector('[data-look-reset]').addEventListener('click', () => {
@@ -439,7 +465,8 @@
             if (!panel.hidden && !panel.contains(e.target) && !tune.contains(e.target)) openPanel(false);
         });
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && !panel.hidden) { openPanel(false); tune.focus(); }
+            // one Escape closes only the panel, not the sidebar behind it as well
+            if (e.key === 'Escape' && !panel.hidden) { e.stopImmediatePropagation(); openPanel(false); tune.focus(); }
         });
         document.addEventListener('click', e => {
             const b = e.target.closest('[data-look]');
@@ -448,13 +475,24 @@
 
         setMode(root.dataset.nav, false);
         sidebar.querySelectorAll('[data-nav-mode]').forEach(b =>
-            b.addEventListener('click', () => setMode(b.dataset.navMode)));
+            b.addEventListener('click', () => {
+                const hadFocus = document.activeElement === b;
+                setMode(b.dataset.navMode);
+                // keyboard focus must stay on something visible: a collapsed
+                // sidebar stays open while focus is inside it, as on Tab
+                if (hadFocus) {
+                    if (root.dataset.nav !== 'full') sidebar.classList.add('is-peek');
+                    toggle.focus();
+                }
+            }));
 
         // hover: only a real pointer, with a short delay so passing by does nothing
         const enter = e => { if (e.pointerType === 'mouse' && desktop.matches) peek(true, 120); };
         sidebar.addEventListener('pointerenter', e => { if (root.dataset.nav === 'compact') enter(e); else peek(true); });
         edge.addEventListener('pointerenter', enter);
-        sidebar.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !pinned) peek(false, 250); });
+        sidebar.addEventListener('pointerleave', e => {
+            if (e.pointerType === 'mouse' && !pinned && !panel.contains(e.relatedTarget)) peek(false, 250);
+        });
         edge.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !pinned) peek(false, 250); });
 
         // click or tap: open until a click elsewhere or Escape
@@ -465,14 +503,25 @@
             }
         });
         document.addEventListener('pointerdown', e => {
-            if (pinned && !sidebar.contains(e.target) && !edge.contains(e.target)) peek(false);
+            if (pinned && !sidebar.contains(e.target) && !edge.contains(e.target) && !panel.contains(e.target)) peek(false);
         });
 
         // keyboard: tabbing into the rail opens it, tabbing out closes it
         sidebar.addEventListener('focusin', () => { if (desktop.matches) peek(true); });
-        sidebar.addEventListener('focusout', e => { if (!sidebar.contains(e.relatedTarget) && !pinned) peek(false); });
+        sidebar.addEventListener('focusout', e => {
+            if (!sidebar.contains(e.relatedTarget) && !panel.contains(e.relatedTarget) && !pinned) peek(false);
+        });
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && sidebar.classList.contains('is-peek')) { peek(false); return; }
+            if (e.key === 'Escape' && panel.hidden && sidebar.classList.contains('is-peek')) {
+                const inside = sidebar.contains(document.activeElement);
+                peek(false);
+                // focus must stay somewhere visible: the edge's button, or the page
+                if (inside) {
+                    if (root.dataset.nav === 'hidden') document.getElementById('navReveal').focus();
+                    else document.getElementById('main')?.focus({ preventScroll: true });
+                }
+                return;
+            }
             if (e.key !== '[' || e.metaKey || e.ctrlKey || e.altKey || !desktop.matches) return;
             if (e.target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return;
             setMode(NAV_MODES[(NAV_MODES.indexOf(root.dataset.nav) + 1) % NAV_MODES.length]);
