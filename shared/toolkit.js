@@ -182,7 +182,7 @@
         'safety': 'Safety'
     };
 
-    const VERSION = '3.6.0';
+    const VERSION = '3.6.1';
 
     // Pages live either at the repo root or one level down in /tools.
     const inToolsDir = /\/tools\//.test(global.location.pathname);
@@ -335,7 +335,13 @@
                 sidebar.classList.toggle('is-peek', on && root.dataset.nav !== 'full');
             }, delay);
         };
-        function setMode(mode) {
+        let animTimer = 0;
+        function setMode(mode, animate = true) {
+            if (animate) {
+                root.classList.add('nav-anim');
+                clearTimeout(animTimer);
+                animTimer = setTimeout(() => root.classList.remove('nav-anim'), 350);
+            }
             root.dataset.nav = mode;
             try { localStorage.setItem('ethicsToolkitNav', mode); } catch (e) { }
             sidebar.classList.remove('is-peek');
@@ -343,7 +349,7 @@
             sidebar.querySelectorAll('.nav-modes [data-nav-mode]').forEach(b =>
                 b.setAttribute('aria-pressed', String(b.dataset.navMode === mode)));
         }
-        setMode(root.dataset.nav);
+        setMode(root.dataset.nav, false);
 
         sidebar.querySelectorAll('[data-nav-mode]').forEach(b =>
             b.addEventListener('click', () => setMode(b.dataset.navMode)));
